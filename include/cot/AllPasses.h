@@ -15,10 +15,13 @@ class InstructionCount;
 
 // Analysis.
 InstructionCount *CreateInstructionCountPass();
+InstructionCount *CreateFileParserPass();
+
 
 // Transformations.
 llvm::Pass *CreateHelloLLVMPass();
 llvm::Pass *CreateFunctionEraserPass();
+llvm::Pass *CreateModuloSchedulingPass();
 
 } // End namespace cot.
 
@@ -28,10 +31,13 @@ class PassRegistry;
 
 // Analysis.
 void initializeInstructionCountPass(PassRegistry &Registry);
+void initializeFileParserPass(PassRegistry &Registry);
+
 
 // Transformations.
 void initializeHelloLLVMPass(PassRegistry &Registry);
 void initializeFunctionEraserPass(PassRegistry &Registry);
+void initializeModuloSchedulingPass(PassRegistry &Registry);
 
 } // End namespace llvm.
 

@@ -27,10 +27,13 @@ public:
 
     // Analysis.
     CreateInstructionCountPass();
+    CreateFileParserPass();
 
     // Transformations.
     CreateHelloLLVMPass();
     CreateFunctionEraserPass();
+    CreateModuloSchedulingPass();
+    
   }
 };
 
@@ -46,10 +49,13 @@ public:
 
     // Analysis.
     initializeInstructionCountPass(Registry);
+    initializeFileParserPass(Registry);
 
     // Transformations.
     initializeHelloLLVMPass(Registry);
     initializeFunctionEraserPass(Registry);
+    initializeModuloSchedulingPass(Registry);
+
   }
 };
 
