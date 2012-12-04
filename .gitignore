@@ -1,5 +1,5 @@
+autoconf/*
+configure
 Misc/*
 *~
 *.o
-autoconf/*
-configure
