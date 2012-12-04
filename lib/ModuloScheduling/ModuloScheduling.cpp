@@ -7,36 +7,19 @@
 
 using namespace cot;
 
-char ModuloScheduling::ID = 0;
 
-bool ModuloScheduling::runOnFunction(llvm::Function &Fun) {
-  ICount = 0;
-
-  // A llvm::Function is just a list of llvm::BasicBlock. In order to get
-  // instruction count we can visit all llvm::BasicBlocks ...
-  for(llvm::Function::const_iterator I = Fun.begin(),
-                                     E = Fun.end();
-                                     I != E;
-                                     ++I)
-    // ... and sum the llvm::BasicBlock size -- A llvm::BasicBlock size is just
-    // a list of instructions!
-    ICount += I->size();
-
-  return false;
+bool ModuloScheduling::doInitialization(llvm::Loop *L, llvm::LPPassManager &LPM){
+  return false;   // Program not modified
 }
 
-void ModuloScheduling::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
-  // This is an analysis, nothing is modified, so other analysis are preserved.
-  AU.setPreservesAll();
+bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
+    return false;   // Program not modified
 }
 
-void ModuloScheduling::print(llvm::raw_ostream &OS,
-                             const llvm::Module *Mod) const {
-  if(!Mod)
-    return;
-
-  OS << "  Instruction count: " << ICount << "\n";
+bool ModuloScheduling::doFinalization(){
+    return false;   // Program not modified
 }
+
 
 using namespace llvm;
 

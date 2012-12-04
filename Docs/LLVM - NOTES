@@ -1,8 +1,8 @@
 NOTES:
 
-LLVM_SRC=/home/matt/cot-project/src/
-LLVM_BUILD=/home/matt/cot-project/build/
-LLVM_ROOT=/home/matt/cot-project/root/
+LLVM_SRC=/home/matt/cot-project/src
+LLVM_BUILD=/home/matt/cot-project/build
+LLVM_ROOT=/home/matt/cot-project/root
 
 clang -emit-llvm -S -o out.ll in.c
 clang -c -emit-llvm -o out.bc in.c

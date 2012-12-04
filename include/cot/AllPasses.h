@@ -3,6 +3,7 @@
 #define COT_ALLPASSES_H
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Analysis/LoopPass.h"
 #include "llvm/Pass.h"
 
 // LLVM passes are classes, but usually they are created using a factory
@@ -21,7 +22,7 @@ InstructionCount *CreateFileParserPass();
 // Transformations.
 llvm::Pass *CreateHelloLLVMPass();
 llvm::Pass *CreateFunctionEraserPass();
-llvm::Pass *CreateModuloSchedulingPass();
+llvm::LoopPass *CreateModuloSchedulingPass();
 
 } // End namespace cot.
 
