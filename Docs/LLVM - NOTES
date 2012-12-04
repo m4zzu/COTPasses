@@ -1,0 +1,14 @@
+NOTES:
+
+LLVM_SRC=/home/matt/cot-project/src/
+LLVM_BUILD=/home/matt/cot-project/build/
+LLVM_ROOT=/home/matt/cot-project/root/
+
+clang -emit-llvm -S -o out.ll in.c
+clang -c -emit-llvm -o out.bc in.c
+
+opt -load $LLVM_BUILD/project/cot/Debug/lib/COTPasses.so -S out.bc
+opt -load $LLVM_BUILD/project/cot/Debug/lib/COTPasses.so -S -hello-llvm out.bc
+
+opt -load /home/matt/cot-project/build/projects/cot/Debug/lib/COTPasses.so -instruction-count -analyze out.bc 
+

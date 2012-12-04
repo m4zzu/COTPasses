@@ -1,0 +1,31 @@
+matt@jack-linux:~/cot-project$ grep -r COT-FM * -A1
+work/build/projects/cot/lib/Makefile:# COT-FM
+work/build/projects/cot/lib/Makefile-DIRS = InstructionCount HelloLLVM FunctionEraser ModuloScheduling
+--
+work/build/projects/cot/tools/COTPasses/Makefile:# COT-FM
+work/build/projects/cot/tools/COTPasses/Makefile-USEDLIBS = cotInstructionCount.a cotHelloLLVM.a cotFunctionEraser.a cotModuloScheduling.a
+--
+work/src/projects/cot/tools/COTPasses/ForceLinking.cpp:	// COT-FM
+work/src/projects/cot/tools/COTPasses/ForceLinking.cpp-	CreateModuloSchedulingPass();
+--
+work/src/projects/cot/tools/COTPasses/ForceLinking.cpp:    // COT-FM
+work/src/projects/cot/tools/COTPasses/ForceLinking.cpp-    initializeModuloSchedulingPass(Registry);
+--
+work/src/projects/cot/tools/COTPasses/Makefile:# COT-FM
+work/src/projects/cot/tools/COTPasses/Makefile-USEDLIBS = cotInstructionCount.a cotHelloLLVM.a cotFunctionEraser.a cotModuloScheduling.a
+--
+work/src/projects/cot/include/cot/AllPasses.h:// COT-FM
+work/src/projects/cot/include/cot/AllPasses.h-llvm::Pass *CreateModuloSchedulingPass();
+--
+work/src/projects/cot/include/cot/AllPasses.h:// COT-FM
+work/src/projects/cot/include/cot/AllPasses.h-void initializeModuloSchedulingPass(PassRegistry &Registry);
+--
+work/src/projects/cot/include/cot/AllPasses.h~:// COT-FM
+work/src/projects/cot/include/cot/AllPasses.h~-llvm::Pass *CreateModuloSchedulingPass();
+--
+work/src/projects/cot/include/cot/AllPasses.h~:// COT-FM
+work/src/projects/cot/include/cot/AllPasses.h~-void initializeModuloSchedulingPass(PassRegistry &Registry);
+--
+work/src/projects/cot/lib/Makefile:# COT-FM
+work/src/projects/cot/lib/Makefile-DIRS = InstructionCount HelloLLVM FunctionEraser ModuloScheduling
+

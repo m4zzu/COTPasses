@@ -1,0 +1,129 @@
+##### Iterative Modulo-Scheduling - Notes from Appel #####
+
+Passate da implementare: 
+
+	Analysis pass: carica il file di configurazione in memoria
+	- Sarà una passata "Immutable" => usa come superclass "llvm::ImmutablePass"
+	- Leggi il file in memoria usando: "llvm::MemoryBuffer"
+	- Input: .cfg file
+	- Output: descrizione delle risorse disponibili
+		numero di risorse per tipo
+		numero di istruzioni lanciabili alla volta
+		restrizioni su istruzioni lanciabili contemporaneamente
+		...???
+
+	Optimization pass: implementazione vera e propria dell'algoritmo
+	- Implementala usando: "llvm::LoopPass"
+	- Input: 
+		corpo di un loop (istruzioni LLVM-IR)
+			Assunzioni:
+			- NO loops annidati
+			- NO costrutti if nel corpo del loop
+			- NO register allocation
+			- Architettura di riferimento: MIPS R10000
+			- Solo istruzioni intere
+			Per ogni istruzione: quale risorsa usa (per ogni stadio della pipeline)
+		Output della Analysis pass precedente
+	- Output: istruzioni LLVM-IR rischedulate
+
+
+Funzioni di servizio da implementare:
+
+	ResourcesBoundEstimator(architecturalDescription):
+		for(any kind of functional unit){
+			cyclesUsed = cyclesPerInstr*instructionsUsingIt;
+			resourceBound = cyclesUsed/numberOfResourcesOfThisKind;
+		}
+		return resourcesBoundEstimator = max(all bounds found);
+
+	DataDependenceBoundEstimator(instructions):
+		retrieve the data-dependence graph;
+		retrieve cycles in that graph;
+		for(every cycle found){
+			dataDependenceBound = latency of the chain;
+		}
+		return dataDependenceBoundEstimator = max(all bounds found);
+
+	PrioritizeInstructions(instructions, architecturalDescription):
+		sort instructions by some heuristic; 
+		return sortedInstructions;
+
+
+	TBD: 
+		existUnscheduledInstructions(???);
+		findHighPriorityUnscheduledInstruction(???);
+		findPredecessors(h, ???);
+		delay(p, h);
+		noResourceConflicts(h, ???);
+		findSuccessors(h, ???);
+		existResourceConflicts(???);
+
+
+Pseudocodice per la optimization pass:
+
+	deltaMin = max(ResourcesBoundEstimator(architecturalDescription), DataDependenceBoundEstimator(instructions));
+
+	instructionList = PrioritizeInstructions(instructions, architecturalDescription);
+
+	// Infinite loop: we have no upper bound for delta
+	for(delta = deltaMin;;){
+
+		budget = n*3;						// Init the number of attempts
+
+		// Init the data structures
+		for(i = 1; i<= n; i++){
+			lastTime[i] = 0;
+			schedTime[i] = null;
+		}
+
+		// While we have attempts and some instructions are not scheduled
+		while(budget > 0 && existUnscheduledInstructions(???)){
+			budget--;
+
+			h = findHighPriorityUnscheduledInstruction(???);
+			predecessorsOfH = findPredecessors(h, ???);
+			tMin = 0;
+
+			// Find the most slow predecessor and update tMin
+			forEach(instruction p in predecessorsOfH){
+				if(SchedTime[p] != null){
+					tMin = max(tMin, SchedTime[p] + delay(p, h));
+				}
+			}
+
+			// Try to schedule h between tMin and tMin + delta - 1
+			for(t = tMin; t < tMin + delta - 1, t++){
+				if(SchedTime[h] == null){
+					if(noResourceConflicts(h, ???)){
+						SchedTime[h] = t;
+					}
+				}
+			}
+
+			// If h not scheduled, schedule it
+			if(SchedTime[h] == null){
+				SchedTime[h] = max(tMin, 1 + LastTime[h]);
+			}
+			LastTime[h] = SchedTime[h];
+		}
+
+		successorsOfH = findSuccessors(h, ???);
+
+		// if successor of h is execute before the end of h, then unschedule it
+		forEach(instruction s in successorsOfH){
+			if(SchedTime[s] != null){
+				if(SchedTime[h] + delay(h, s) > SchedTime[s]){
+					SchedTime[s] = null;
+				}
+			}
+		}
+
+		// Remove from the scheduling all the instructions (other than h) involved in a resource conflict
+		for(s = getFirstInstructionConflicting(???); s != h ; s = getFirstInstructionConflicting(???)){
+			SchedTime[s] = null;
+		}
+
+		if(all instructions are scheduled)
+			// Skip register allocation
+			return;
+	}
