@@ -7,6 +7,7 @@
 
 using namespace cot;
 
+char ModuloScheduling::ID = 0;
 
 bool ModuloScheduling::doInitialization(llvm::Loop *L, llvm::LPPassManager &LPM){
   return false;   // Program not modified
