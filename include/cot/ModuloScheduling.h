@@ -48,6 +48,7 @@ namespace cot {
   private:
     // This is the information computed by the analysis.
     unsigned blocksCount;
+    unsigned instructionsCount;
     std::vector<std::string *> instructions;
 
   };
