@@ -1,0 +1,9 @@
+##### TestCase - Esponenziale di due e fibonacci #####
+
+Corpo del ciclo: ----
+
+exp_2 = exp_2 * 2;
+fib = fn_1 + fn_2;
+fn_2 = fn_1;
+fn_1 = fib;
+i = i + 1;

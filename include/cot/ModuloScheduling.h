@@ -40,12 +40,16 @@ namespace cot {
       return "Modulo Scheduling";
     }
 
+    virtual void print(llvm::raw_ostream &OS, const llvm::Module *Mod) const;
+
   public:
    // Other methods?
 
   private:
     // This is the information computed by the analysis.
-    int deltaMin;
+    unsigned blocksCount;
+    std::vector<std::string *> instructions;
+
   };
 
 } // End cot namespace.
