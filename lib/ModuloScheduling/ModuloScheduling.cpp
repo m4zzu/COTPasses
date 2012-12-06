@@ -17,6 +17,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   // llvm::Instruction *tempInstr
 
   blocksCount = 0;
+  instructionsCount = 0;
 
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
 
