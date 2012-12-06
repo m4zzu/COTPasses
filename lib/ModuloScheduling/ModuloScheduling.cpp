@@ -23,23 +23,15 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   for(unsigned i = 0; i < blocks.size(); ++i){
     blocksCount += 1;
 
-    llvm::iplist<llvm::Instruction> listOfInstructions = blocks[i]->getInstList();
+    llvm::BasicBlock *currentBlock = blocks[i];
+    for(llvm::BasicBlock::iterator i = *currentBlock->begin(), 
+                                   e = *currentBlock->end(); 
+                                   i != e; 
+                                   ++i){
+      instructionsCount += 1;
 
+    }
   }
-
-
-  /*
-  llvm::LoopInfo &LI = getAnalysis<llvm::LoopInfo>(&L);
-  for (llvm::LoopInfo::iterator i = LI.begin(), e = LI.end(); i != e; ++i) {
-    blocksCount += 1;
-  }
-*/
-
-
-
-
-
-
 
   return false;   // Program not modified
 }
@@ -54,6 +46,8 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     return;
 
   OS << "blocks count: " << blocksCount << "\n";
+  OS << "instructions count: " << instructionsCount << "\n";
+
 }
 
 
