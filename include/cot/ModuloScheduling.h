@@ -50,6 +50,7 @@ namespace cot {
     unsigned blocksCount;
     unsigned instructionsCount;
     std::vector<std::string *> instructions;
+    std::vector<const char *> opCode;
 
   };
 
