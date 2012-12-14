@@ -30,16 +30,16 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
 
-  for(unsigned i = 0; i < blocks.size(); ++i){
+  for(unsigned i = 0; i < blocks.size(); ++i) {
     blocksCount += 1;
 
     llvm::BasicBlock *currentBlock = blocks[i];
     for(llvm::BasicBlock::iterator i = *currentBlock->begin(), 
                                    e = *currentBlock->end(); 
                                    i != e; 
-                                   ++i){
+                                   ++i) {
       instructionsCount += 1;
-
+      opCode.push_back(i->getOpcodeName());
     }
   }
 
@@ -57,7 +57,11 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
 
   OS << "blocks count: " << blocksCount << "\n";
   OS << "instructions count: " << instructionsCount << "\n";
-
+  u_int i = 0;
+  while (i < opCode.size()) {
+    OS << "..:: " << opCode[i] << "\n";
+    ++i;
+  }
 }
 
 
