@@ -16,6 +16,15 @@ bool ModuloScheduling::doInitialization(llvm::Loop *L, llvm::LPPassManager &LPM)
 bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   // llvm::Instruction *tempInstr
 
+  // se loop depth è > 1, termina!
+  // controlla che la ind var sia incrementata di 1 (canonica)
+  // loopBody: dev'essere un unico BB
+  // scarta la induction variable: splitta in due il BB  e lasciala fuori
+
+  // lavora sull'unico BB: chiama funzione schedule()
+
+  // rifondi con il BB della ind var
+
   blocksCount = 0;
   instructionsCount = 0;
 

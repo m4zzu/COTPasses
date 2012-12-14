@@ -36,8 +36,12 @@ Funzioni di servizio da implementare:
 		}
 		return resourcesBoundEstimator = max(all bounds found);
 
-	DataDependenceBoundEstimator(instructions):
+	DataDependenceBoundEstimator(instructions)
 		retrieve the data-dependence graph;
+			per ogni istr, abbiamo la lista degli usi = le var che usa quella istruzione
+			oppure usa SCEV: "dammi l'espressione corrispondente alla b..."
+			una delle foglie sarà una recursive scev
+				se la trovi, vuol dire che c'è un loop!
 		retrieve cycles in that graph;
 		for(every cycle found){
 			dataDependenceBound = latency of the chain;
@@ -72,8 +76,8 @@ Pseudocodice per la optimization pass:
 
 		// Init the data structures
 		for(i = 1; i<= n; i++){
-			lastTime[i] = 0;
-			schedTime[i] = null;
+			lastTime[i] = 0;			
+			schedTime[i] = null;		// è un vettore o una mappa
 		}
 
 		// While we have attempts and some instructions are not scheduled
