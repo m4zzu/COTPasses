@@ -8,3 +8,21 @@ logical,ALU1,1
 logical,ALU2,1
 set,ALU1,1
 set,ALU2,1
+
+
+
+
+
+2 Files:
+
+	add, ALU
+	sub
+	mul
+	div
+	confronto
+	----
+
+	ALU = 4
+	...
+
+Parserizza e memorizza nella classe
