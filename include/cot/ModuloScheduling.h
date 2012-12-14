@@ -42,15 +42,33 @@ namespace cot {
 
     virtual void print(llvm::raw_ostream &OS, const llvm::Module *Mod) const;
 
+
   public:
    // Other methods?
 
   private:
     // This is the information computed by the analysis.
+    // REAL VARS
+    unsigned delta;
+    std::vector<llvm::Instruction *> scheduledInstructions;
+
+
+    // TEMP VARS
     unsigned blocksCount;
     unsigned instructionsCount;
-    std::vector<std::string *> instructions;
     std::vector<const char *> opCode;
+
+    // The schedule method implements the Modulo Scheduling algorithm as it's described in: 
+    // "Modern Compiler Implementation in Java", 
+    // chapter: "Pipelining and Scheduling",
+    // author: Andrew W. Appel
+    virtual std::vector<llvm::Instruction *> schedule(std::vector<llvm::Instruction *> instructions);
+
+    virtual unsigned resourcesBoundEstimator();
+
+    virtual unsigned dataDependenceBoundEstimator();
+    
+    virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
 
   };
 
