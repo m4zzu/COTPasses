@@ -53,6 +53,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
     // Apply the algorithm
     instructions = schedule(instructions);
+    // createNewBlock(instructions);
+    // deleteOldBlock();
   }
 
   // rifondi con il BB della ind var
