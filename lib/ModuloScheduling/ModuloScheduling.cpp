@@ -5,6 +5,8 @@
 #include "llvm/Function.h"
 #include "llvm/Support/ErrorHandling.h"
 
+#include <map>
+
 using namespace cot;
 
 char ModuloScheduling::ID = 0;
@@ -223,7 +225,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::v
   return instructions;
 }
 
-llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime){
+llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime){
 
   for (unsigned i = 0; i < instructions.size(); ++i) {
     llvm::Instruction* currentInstr = instructions[i];
@@ -234,31 +236,31 @@ llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Inst
   return NULL;                       // NO unscheduled instruction found
 }
 
-std::vector<llvm::Instruction *> findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
   /* Find all the predecessors of an instruction
   */
   return instructions;
 }
 
-std::vector<llvm::Instruction *> findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
   /* Find all the successors of an instruction
   */
   return instructions;
 }
 
-int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions){
+int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions){
   /* CHECK THE APPEL BOOK!
   */
   return 2;
 }
 
-llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions){
+llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions){
   /* Find resource conflicts
   */
   return NULL;
 }
 
-bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime){
+bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> schedTime){
   for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
           iter != schedTime.end(); 
           ++iter){

@@ -70,16 +70,16 @@ void FileParser::print(raw_ostream &OS,
   }
   OS << "=======-------=======\n";
 
-  OS << "mul Cycle: ";
-  OS << architecture->getCycle("mul") << "\n";
+  // OS << "mul Cycle: ";
+  // OS << architecture->getCycle("mul") << "\n";
 
-  std::vector<std::string> c = architecture->getUnit("add");
-  OS << "add Unit:\n";
-  i = 0;
-  while (i < c.size()) {
-    OS << "\t" << c[i] << "\n";
-  ++i;
-  }
+  // std::vector<std::string> c = architecture->getUnit("add");
+  // OS << "add Unit:\n";
+  // i = 0;
+  // while (i < c.size()) {
+  //   OS << "\t" << c[i] << "\n";
+  // ++i;
+  // }
 }
 
 INITIALIZE_PASS(FileParser,
