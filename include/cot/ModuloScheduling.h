@@ -49,13 +49,13 @@ namespace cot {
   private:
     // This is the information computed by the analysis.
     // REAL VARS
-    unsigned delta;
+    int delta;
     std::vector<llvm::Instruction *> scheduledInstructions;
 
 
     // TEMP VARS
-    unsigned blocksCount;
-    unsigned instructionsCount;
+    int blocksCount;
+    int instructionsCount;
     std::vector<const char *> opCode;
 
     // The schedule method implements the Modulo Scheduling algorithm as it's described in: 
@@ -64,11 +64,23 @@ namespace cot {
     // author: Andrew W. Appel
     virtual std::vector<llvm::Instruction *> schedule(std::vector<llvm::Instruction *> instructions);
 
-    virtual unsigned resourcesBoundEstimator();
+    virtual int resourcesBoundEstimator();
 
-    virtual unsigned dataDependenceBoundEstimator();
+    virtual int dataDependenceBoundEstimator();
     
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
+
+    virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
+
+    virtual std::vector<llvm::Instruction *> findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions);
+
+    virtual std::vector<llvm::Instruction *> findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions);
+
+    virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions);
+
+    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions);
+
+    virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
 
   };
 
