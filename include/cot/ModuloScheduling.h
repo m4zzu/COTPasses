@@ -82,6 +82,9 @@ namespace cot {
 
     virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
 
+    virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
+
+    virtual void createNewBlock(llvm::BasicBlock *, std::vector<llvm::Instruction *>);
   };
 
 } // End cot namespace.

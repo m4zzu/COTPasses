@@ -14,14 +14,13 @@ public:
   Architecture *architecture;
 
 public:
-  FileParser() : llvm::ImmutablePass(ID) {
-    architecture = new Architecture();
-  }
+  FileParser() : llvm::ImmutablePass(ID) { }
 
 public:
   virtual bool runOnModule(llvm::Module &Mod);
   virtual void print(llvm::raw_ostream &OS, const llvm::Module *Mod) const;
   virtual void initializePass();
+  Architecture *getArchitecture() { return architecture; }
 
 };
 

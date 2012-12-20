@@ -1,9 +1,12 @@
 
 #include "cot/AllPasses.h"
 #include "cot/ModuloScheduling.h"
+#include "cot/FileParser.h"
 
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Function.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/PassAnalysisSupport.h"
 
 #include <map>
 
@@ -44,6 +47,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     blocksCount += 1;
 
     llvm::BasicBlock *currentBlock = blocks[i];
+
     // Extract the instructions from the basic block
     for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
                                    end = *currentBlock->end(); 
@@ -52,19 +56,24 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
         instructionsCount += 1;
         instructions.push_back(istr);
       }
-
-    // Apply the algorithm
-    instructions = schedule(instructions);
-    // createNewBlock(instructions);
-    // deleteOldBlock();
   }
-
   // rifondi con il BB della ind var
+
+  // Apply the algorithm
+  instructions = schedule(instructions);
+  // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
+  // deleteOldBlock();
 
   // Set the global variable, so it's accessible by the print method 
   scheduledInstructions = instructions;
 
   return true;   // Program modified
+}
+
+void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
+{
+  llvm::BasicBlock BB = llvm::BasicBlock(CB->getContext());
+  CB = &BB;
 }
 
 bool ModuloScheduling::doFinalization(){
@@ -84,6 +93,21 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "..:: " << (scheduledInstructions[i])->getOpcodeName() << "\n";
     ++i;
   }
+
+  FileParser &fp = getAnalysis<FileParser>();
+  Architecture *architecture = fp.getArchitecture();
+
+  OS << "=======-------=======\n";
+  std::vector<Instruction> A = architecture->getAllArch();
+  i = 0;
+  while (i < A.size()) {
+    OS << "Conf " << (i + 1) << ":\n";
+    OS << "\tInstr:\t" << A[i].getInstruction() << "\n";
+    OS << "\tUnit:\t" << A[i].getUnit() << "\n";
+    OS << "\tCycle:\t" << A[i].getCycle() << "\n";
+    ++i;
+  }
+  OS << "=======-------=======\n";
 }
 
 
@@ -268,6 +292,11 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
           return false;
   }
   return true;
+}
+
+void ModuloScheduling::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
+  AU.addRequired<FileParser>();
+  AU.setPreservesAll();
 }
 
 

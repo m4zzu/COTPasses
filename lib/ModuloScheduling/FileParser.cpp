@@ -13,26 +13,26 @@
 #include "llvm/ADT/StringRef.h"
 
 using namespace cot;
-using namespace llvm;
 
 char FileParser::ID = 0;
 
-bool FileParser::runOnModule(Module &Mod) {
+bool FileParser::runOnModule(llvm::Module &Mod) {
   return  false;
 }
 
 void FileParser::initializePass() {
-  OwningPtr<MemoryBuffer> fileConf;
-  error_code err = MemoryBuffer::getFile("lib/ModuloScheduling/mips10000.cfg", fileConf);
+  architecture = new Architecture();
+  llvm::OwningPtr<llvm::MemoryBuffer> fileConf;
+  llvm::error_code err = llvm::MemoryBuffer::getFile("lib/ModuloScheduling/mips10000.cfg", fileConf);
   if (err != NULL && err.value() != 0) {
     return;
   }
-  StringRef content = fileConf->getBuffer();
-  std::pair<StringRef, StringRef> rows = content.split('\n');
+  llvm::StringRef content = fileConf->getBuffer();
+  std::pair<llvm::StringRef, llvm::StringRef> rows = content.split('\n');
   u_int i = 0;
   while (rows.first.size() != 0) {
     if (rows.first.front() != '#' && rows.first.front() != '\n') {
-      std::pair<StringRef, StringRef> cells = rows.first.split(',');
+      std::pair<llvm::StringRef, llvm::StringRef> cells = rows.first.split(',');
       i = 0;
       std::string instr;
       std::string u;
@@ -53,8 +53,8 @@ void FileParser::initializePass() {
   }
 }
 
-void FileParser::print(raw_ostream &OS,
-                             const Module *Mod) const {
+void FileParser::print(llvm::raw_ostream &OS,
+                             const llvm::Module *Mod) const {
   if(!Mod)
     return;
 
@@ -70,17 +70,9 @@ void FileParser::print(raw_ostream &OS,
   }
   OS << "=======-------=======\n";
 
-  // OS << "mul Cycle: ";
-  // OS << architecture->getCycle("mul") << "\n";
-
-  // std::vector<std::string> c = architecture->getUnit("add");
-  // OS << "add Unit:\n";
-  // i = 0;
-  // while (i < c.size()) {
-  //   OS << "\t" << c[i] << "\n";
-  // ++i;
-  // }
 }
+
+using namespace llvm;
 
 INITIALIZE_PASS(FileParser,
                 "file-parser",
