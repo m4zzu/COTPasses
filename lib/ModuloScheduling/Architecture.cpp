@@ -33,3 +33,7 @@ std::vector<std::string> Architecture::getUnit(std::string instruction) {
   }
   return v;
 }
+
+/*
+getNumberOfUnits(instruction)
+*/

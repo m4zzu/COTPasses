@@ -20,19 +20,24 @@ bool ModuloScheduling::doInitialization(llvm::Loop *L, llvm::LPPassManager &LPM)
 
 bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
  
-  // Init all the vars ---
-  // REAL VARS
-  delta = 0;
-  std::vector<llvm::Instruction *> instructions;
-
-  // TEMP VARS
-  blocksCount = 0;
-  instructionsCount = 0;
-
   // Ignore nested loop
   int depth = L->getLoopDepth();
   if(depth > 1)
     return false;     // Program not modified
+
+  // Init all the vars ---
+  // REAL VARS
+  delta = 0;
+  
+  FileParser &fp = getAnalysis<FileParser>();
+  Architecture *architecture = fp.getArchitecture();
+
+  std::vector<llvm::Instruction *> instructions;
+
+
+  // TEMP VARS
+  blocksCount = 0;
+  instructionsCount = 0;
 
   // llvm::Instruction *tempInstr
 
@@ -60,7 +65,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   // rifondi con il BB della ind var
 
   // Apply the algorithm
-  instructions = schedule(instructions);
+  //instructions = schedule(instructions);
   // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
   // deleteOldBlock();
 
@@ -72,8 +77,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
-  llvm::BasicBlock BB = llvm::BasicBlock(CB->getContext());
-  CB = &BB;
+  //llvm::BasicBlock BB = llvm::BasicBlock(CB->getContext());
+  //CB = &BB;
 }
 
 bool ModuloScheduling::doFinalization(){
@@ -111,14 +116,14 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
 }
 
 
-std::vector<llvm::Instruction *> ModuloScheduling::schedule(std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
 
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
+  int deltaMin = std::max(resourcesBoundEstimator(architecture, instructions), dataDependenceBoundEstimator());
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
@@ -217,13 +222,24 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(std::vector<llvm::In
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator(){
-  /* PARAM: architecturalDescription
-    for(any kind of functional unit){
-      cyclesUsed = cyclesPerInstr*instructionsUsingIt;
-      resourceBound = cyclesUsed/numberOfResourcesOfThisKind;
-    }
-    return resourcesBoundEstimator = max(all bounds found);
+int ModuloScheduling::resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
+  /* PARAM: architecture
+  creo una mappa: istr - contatore
+  for(tutte le istruzioni){
+    se è presente nella mappa
+      incremento
+    altrimenti
+      aggiungo: istr - 1
+  }
+
+  delta = 0;
+  for(sulla mappa){
+    numCicliIstr = arch.getCycle(chiave della mappa);
+    deltaTemp = roundUp(numCicliIstr*mappa.get(chiave)/getNumberOfUnits(chiave));
+    if(deltaTemp > delta)
+      delta = deltaTemp;
+  }
+  return delta;
   */
   return 2;
 }
@@ -240,8 +256,9 @@ int ModuloScheduling::dataDependenceBoundEstimator(){
       dataDependenceBound = latency of the chain;
   }
   return dataDependenceBoundEstimator = max(all bounds found);
+  CI PENSIAMO POI...
   */
-  return 3;
+  return 1;
 }
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
@@ -261,13 +278,33 @@ llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std:
 }
 
 std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
-  /* Find all the predecessors of an instruction
+  /*
+  // Find all the predecessors of an instruction
+  // --- NO!!
+  iteratore sulle instructions;
+  vettore pred;
+  while(iteratore è diverso dalla instrPassata){
+    pred.push_back(instrCorrente);
+  }
+  return pred;
   */
   return instructions;
 }
 
 std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
-  /* Find all the successors of an instruction
+  /*
+  // Find all the successors of an instruction
+  // --- NO!!
+  iteratore sulle instructions;
+  vettore succ;
+  while(iteratore è diverso dalla instrPassata){
+    // Skip
+  }
+
+  while(finisce vettore){
+    succ.push_back(instrCorrente);
+  }
+  return succ;
   */
   return instructions;
 }

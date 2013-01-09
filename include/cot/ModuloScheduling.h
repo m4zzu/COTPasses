@@ -4,6 +4,7 @@
 
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "cot/Architecture.h"
 
 namespace cot {
 
@@ -52,7 +53,6 @@ namespace cot {
     int delta;
     std::vector<llvm::Instruction *> scheduledInstructions;
 
-
     // TEMP VARS
     int blocksCount;
     int instructionsCount;
@@ -62,9 +62,9 @@ namespace cot {
     // "Modern Compiler Implementation in Java", 
     // chapter: "Pipelining and Scheduling",
     // author: Andrew W. Appel
-    virtual std::vector<llvm::Instruction *> schedule(std::vector<llvm::Instruction *> instructions);
+    virtual std::vector<llvm::Instruction *> schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
 
-    virtual int resourcesBoundEstimator();
+    virtual int resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
 
     virtual int dataDependenceBoundEstimator();
     
