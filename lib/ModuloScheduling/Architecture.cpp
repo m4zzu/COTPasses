@@ -34,6 +34,12 @@ std::vector<std::string> Architecture::getUnit(std::string instruction) {
   return v;
 }
 
-/*
-getNumberOfUnits(instruction)
-*/
+int Architecture::getNumberOfUnits(std::string instruction) {
+  u_int tot = 0, i;
+  for (i = 0; i < arch->size(); ++i) {
+    Instruction instr = arch->at(i);
+    if (instr.getInstruction().compare(instruction) == 0)
+      ++tot;
+  }
+  return tot;
+}

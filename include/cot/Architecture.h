@@ -37,6 +37,7 @@ public:
   int getCycle(std::string instruction);
   std::vector<std::string> getUnit(std::string instruction);
   std::vector<Instruction> getAllArch() { return *arch; };
+  int getNumberOfUnits(std::string instruction);
 
 private:
   std::vector<Instruction> *arch;
