@@ -67,6 +67,10 @@ namespace cot {
     virtual int resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
 
     virtual int dataDependenceBoundEstimator();
+
+    virtual void findUsagesRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> * instructionsMap, llvm::Instruction * istr, int offset) const;
+
+    virtual int recursiveLatency();
     
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
 

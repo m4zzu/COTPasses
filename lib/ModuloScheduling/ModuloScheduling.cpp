@@ -93,9 +93,20 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "delta: " << delta << "\n";
   OS << "blocks count: " << blocksCount << "\n";
   OS << "instructions count: " << instructionsCount << "\n";
+
   u_int i = 0;
   while (i < scheduledInstructions.size()) {
-    OS << "..:: " << (scheduledInstructions[i])->getOpcodeName() << "\n";
+
+    u_int j = 0;
+    std::map<llvm::Instruction *, bool> instructionsMap;
+    while (j < scheduledInstructions.size()) {
+      instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
+      ++j;
+    }
+
+    OS << "==========\n";
+    findUsagesRecursive(OS, &instructionsMap, scheduledInstructions[i], 0);
+    OS << "==========\n";  
     ++i;
   }
 
@@ -113,6 +124,27 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     ++i;
   }
   OS << "=======-------=======\n";
+}
+
+
+void ModuloScheduling::findUsagesRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> * instructionsMap, llvm::Instruction * istr, int offset) const{
+  
+  // Print to screen
+  OS << offset << " - " << istr->getOpcodeName() << "\n";
+
+  // Set instruction as visited
+  (*instructionsMap)[istr] = true;
+
+  // For all the uses
+  for(llvm::Value::use_iterator begin = istr->use_begin(), 
+                                  end = istr->use_end(); 
+                                  begin != end;  
+                                  ++begin) {
+    if (llvm::Instruction *Inst = llvm::dyn_cast<llvm::Instruction>(*begin)) {
+      if((*instructionsMap)[Inst] == false)
+        findUsagesRecursive(OS, instructionsMap, Inst, offset + 1);
+    }
+  }
 }
 
 
@@ -258,6 +290,10 @@ int ModuloScheduling::dataDependenceBoundEstimator(){
   return dataDependenceBoundEstimator = max(all bounds found);
   CI PENSIAMO POI...
   */
+  return 1;
+}
+
+int ModuloScheduling::recursiveLatency(){
   return 1;
 }
 
