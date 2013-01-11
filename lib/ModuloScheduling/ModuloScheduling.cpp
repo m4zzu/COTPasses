@@ -7,6 +7,9 @@
 #include "llvm/Function.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/PassAnalysisSupport.h"
+#include "llvm/Instructions.h"
+#include "llvm/Type.h"
+#include "llvm/Analysis/LoopInfo.h"
 
 #include <map>
 
@@ -29,8 +32,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   // REAL VARS
   delta = 0;
   
-  FileParser &fp = getAnalysis<FileParser>();
-  Architecture *architecture = fp.getArchitecture();
+  // FileParser &fp = getAnalysis<FileParser>();
+  // Architecture *architecture = fp.getArchitecture();
 
   std::vector<llvm::Instruction *> instructions;
 
@@ -53,14 +56,18 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
     llvm::BasicBlock *currentBlock = blocks[i];
 
+    llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop> LIB = llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop>();
+    LIB.changeLoopFor(currentBlock, L);
+    if (!LIB.isLoopHeader(currentBlock)) {
     // Extract the instructions from the basic block
-    for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
-                                   end = *currentBlock->end(); 
-                                   istr != end; 
-                                   ++istr) {
-        instructionsCount += 1;
-        instructions.push_back(istr);
+      for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
+                                     end = *currentBlock->end(); 
+                                     istr != end; 
+                                     ++istr) {
+          instructionsCount += 1;
+          instructions.push_back(istr);
       }
+    }
   }
   // rifondi con il BB della ind var
 
@@ -77,8 +84,13 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
-  //llvm::BasicBlock BB = llvm::BasicBlock(CB->getContext());
-  //CB = &BB;
+  // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::  getGlobalContext(), "entry");
+  // //CB = &BB;
+  // u_int i = 0;
+  // for (i = 0; i < instructions.size(); ++i) {
+  //     instructionsCount = 999;
+  //     BB->getInstList().push_back(instructions[i]);
+  //   }
 }
 
 bool ModuloScheduling::doFinalization(){
