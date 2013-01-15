@@ -68,9 +68,7 @@ namespace cot {
 
     virtual int dataDependenceBoundEstimator();
 
-    virtual int findDefRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
-
-    virtual int recursiveLatency();
+    virtual int findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset);
     
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
 
