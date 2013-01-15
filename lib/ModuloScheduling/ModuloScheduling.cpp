@@ -94,28 +94,41 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "blocks count: " << blocksCount << "\n";
   OS << "instructions count: " << instructionsCount << "\n";
 
-  u_int i = 0;
-  while (i < scheduledInstructions.size()) {
 
-    u_int j = 0;
-    std::map<llvm::Instruction *, bool> instructionsMap;
-    while (j < scheduledInstructions.size()) {
-      instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
-      ++j;
+  // Create a map: {instruction, isVisited}
+  std::map<llvm::Instruction *, bool> instructionsMap;
+  for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
+    instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
+  }
+
+  int finalBound = 0;
+  int tempBound = 0;
+  // For all the instructions
+  for(unsigned i = 0; i < scheduledInstructions.size(); ++i) {
+
+    tempBound = 0;
+
+    // Skip "phi" function: they will not be scheduled on the pipeline
+    if(!llvm::StringRef("phi").equals(scheduledInstructions[i]->getOpcodeName())){
+
+      // Recursively find definitions of the operands of the instruction
+      tempBound = findDefRecursive(OS, instructionsMap, scheduledInstructions[i], 0);
+
+      OS << "tempBound = " << tempBound << "\n";  
     }
 
-    OS << "==========\n";
-    findUsagesRecursive(OS, &instructionsMap, scheduledInstructions[i], 0);
-    OS << "==========\n";  
-    ++i;
+    if(tempBound > finalBound)
+      finalBound = tempBound;
   }
+
+  OS << "finalBound = " << finalBound << "\n";  
 
   FileParser &fp = getAnalysis<FileParser>();
   Architecture *architecture = fp.getArchitecture();
 
   OS << "=======-------=======\n";
   std::vector<Instruction> A = architecture->getAllArch();
-  i = 0;
+  unsigned i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";
     OS << "\tInstr:\t" << A[i].getInstruction() << "\n";
@@ -127,24 +140,65 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
 }
 
 
-void ModuloScheduling::findUsagesRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> * instructionsMap, llvm::Instruction * istr, int offset) const{
+int ModuloScheduling::findDefRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{
   
-  // Print to screen
-  OS << offset << " - " << istr->getOpcodeName() << "\n";
+
+  if(!llvm::StringRef("phi").equals(currentI->getOpcodeName())){
+    // Print to screen
+    for (int i = 0; i <= offset; ++i)
+      OS << "  ";
+
+    OS << offset << " - " << currentI->getOpcodeName() << "\n";
+  }
 
   // Set instruction as visited
-  (*instructionsMap)[istr] = true;
+  instructionsMap[currentI] = true;
 
-  // For all the uses
-  for(llvm::Value::use_iterator begin = istr->use_begin(), 
-                                  end = istr->use_end(); 
+  int currentOffset = 0;
+  int tempOffset = 0;
+
+  // For all the definitions
+  for (llvm::User::op_iterator i = currentI->op_begin(), e = currentI->op_end(); i != e; ++i) {
+
+    tempOffset = 0;
+
+    if(llvm::Instruction * definerInstr = llvm::dyn_cast<llvm::Instruction>(*i)){
+          
+      if(instructionsMap[definerInstr] == false){
+
+        if(llvm::StringRef("phi").equals(definerInstr->getOpcodeName()))
+          tempOffset = findDefRecursive(OS, instructionsMap, definerInstr, offset);
+        else
+          tempOffset = findDefRecursive(OS, instructionsMap, definerInstr, offset + 1);
+      }else{
+        tempOffset = offset + 1;
+      }
+    }
+    if(tempOffset > currentOffset)
+      currentOffset = tempOffset;
+    
+
+  }
+
+  return currentOffset;
+
+
+
+/*
+  for(llvm::Value::use_iterator begin = currentI->use_begin(), 
+                                  end = currentI->use_end(); 
                                   begin != end;  
                                   ++begin) {
     if (llvm::Instruction *Inst = llvm::dyn_cast<llvm::Instruction>(*begin)) {
-      if((*instructionsMap)[Inst] == false)
-        findUsagesRecursive(OS, instructionsMap, Inst, offset + 1);
+
+      // If the user instruction hasn't been already visited
+      if(instructionsMap[Inst] == false)
+        return findDefRecursive(OS, instructionsMap, Inst, offset + 1);
     }
   }
+  */
+
+
 }
 
 

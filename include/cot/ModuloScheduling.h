@@ -68,7 +68,7 @@ namespace cot {
 
     virtual int dataDependenceBoundEstimator();
 
-    virtual void findUsagesRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> * instructionsMap, llvm::Instruction * istr, int offset) const;
+    virtual int findDefRecursive(llvm::raw_ostream &OS, std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
 
     virtual int recursiveLatency();
     
