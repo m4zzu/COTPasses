@@ -8,8 +8,20 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/PassAnalysisSupport.h"
 #include "llvm/Instructions.h"
-#include "llvm/Type.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/LLVMContext.h"
+#include "llvm/Support/IRBuilder.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/DerivedTypes.h"
+#include "llvm/Type.h"
+
+#include "llvm/Module.h"
+#include "llvm/Function.h"
+#include "llvm/PassManager.h"
+#include "llvm/Analysis/Verifier.h"
+#include "llvm/Assembly/PrintModulePass.h"
+
+#include "llvm/ADT/StringRef.h"
 
 #include <map>
 
@@ -64,11 +76,15 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
                                      end = *currentBlock->end(); 
                                      istr != end; 
                                      ++istr) {
-          instructionsCount += 1;
+          // instructionsCount += 1;
           instructions.push_back(istr);
       }
+      // instructions = schedule(instructions);
+      // createNewBlock(currentBlock, instructions, i);
     }
+    createNewBlock(currentBlock, instructions, i);
   }
+
   // rifondi con il BB della ind var
 
   // Apply the algorithm
@@ -84,13 +100,29 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
-  // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::  getGlobalContext(), "entry");
-  // //CB = &BB;
+  llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
+  llvm::IRBuilder<> builder(llvm::getGlobalContext());
+  builder.SetInsertPoint(CB);
+
+  // llvm::iplist<llvm::NodeTy, llvm::Traits> il = CB->getInstList();
+  // llvm::Instruction *pi = llvm::dyn_cast<llvm::Instruction>(CB->getFirstNonPHI());
+  // llvm::Instruction *newInst = new llvm::Instruction();
+  // CB->getInstList().insert(pi, newInst);
+  // llvm::BasicBlock::iterator ii(instToReplace);
+  // const llvm::Type * Int32Type = llvm::IntegerType::getInt32Ty(llvm::getGlobalContext());
+  // llvm::ReplaceInstWithInst(instToReplace->getParent()->getInstList(), ii, new llvm::AllocaInst(llvm::PointerType::getUnqual(Int32Type), 0, "ptrToReplacedInt"));
+
+  // llvm::BasicBlock* BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), ("bb"));
+
+  // // //CB = &BB;
   // u_int i = 0;
-  // for (i = 0; i < instructions.size(); ++i) {
-  //     instructionsCount = 999;
-  //     BB->getInstList().push_back(instructions[i]);
-  //   }
+  // u_int tot = instructions.size() - 1;
+  // for (i = 0; i < instructions.size() / 2; ++i) {
+  //   // llvm::AllocationInst *AI = llvm::dyn_cast<llvm::AllocationInst>(instructions[i]);
+  //     llvm::Instruction *Inst = llvm::dyn_cast<llvm::Instruction>(instructions[i]);
+
+  //     // CB->getInstList()
+  // }
 }
 
 bool ModuloScheduling::doFinalization(){
