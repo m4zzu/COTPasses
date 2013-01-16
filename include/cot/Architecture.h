@@ -6,7 +6,7 @@ namespace cot {
 
 struct Instruction
 {
-  private:    
+  private:
     std::string instruction;
     std::string unit;
     int cycle;

@@ -24,6 +24,7 @@
 #include "llvm/ADT/StringRef.h"
 
 #include <map>
+#include <vector>
 
 using namespace cot;
 
@@ -82,7 +83,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
       // instructions = schedule(instructions);
       // createNewBlock(currentBlock, instructions, i);
     }
-    createNewBlock(currentBlock, instructions, i);
+    // createNewBlock(currentBlock, instructions, i);
   }
 
   // rifondi con il BB della ind var
@@ -220,7 +221,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
       }
       lastTime[currentInstruction] = schedTime[currentInstruction];
 
-      std::vector<llvm::Instruction *> successors = findSuccessors(currentInstruction, instructions);
+      // std::vector<llvm::Instruction *> successors = findSuccessors(currentInstruction, instructions);
+      std::vector<llvm::Instruction *> successors;
 
       // if successor of h is execute before the end of h, then unschedule it
       for(unsigned k = 0; k < successors.size(); ++k){
@@ -321,7 +323,7 @@ llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std:
   return NULL;                       // NO unscheduled instruction found
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions) {
   /*
   // Find all the predecessors of an instruction
   // --- NO!!
@@ -332,10 +334,18 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
   }
   return pred;
   */
-  return instructions;
+  std::vector<llvm::Instruction *> pred;
+  for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
+                                                instr != instructions.end();
+                                                ++instr) {
+    if ((*instr) == h)
+      break;
+    pred.push_back(*instr);
+  }
+  return pred;
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions) {
   /*
   // Find all the successors of an instruction
   // --- NO!!
@@ -350,7 +360,17 @@ std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruct
   }
   return succ;
   */
-  return instructions;
+  bool flag = 0;
+  std::vector<llvm::Instruction *> succ;
+  for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
+                                                istr != instructions.end();
+                                                ++istr) {
+    if (flag)
+      succ.push_back(*istr);
+    if ((*istr) == h)
+      flag = 1;
+  }
+  return succ;
 }
 
 int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions){
