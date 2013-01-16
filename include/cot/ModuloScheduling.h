@@ -52,6 +52,7 @@ namespace cot {
     // REAL VARS
     int delta;
     std::vector<llvm::Instruction *> scheduledInstructions;
+    Architecture *architecture;
 
     // TEMP VARS
     int blocksCount;
@@ -64,9 +65,11 @@ namespace cot {
     // author: Andrew W. Appel
     virtual std::vector<llvm::Instruction *> schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
 
-    virtual int resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
+    virtual int resourcesBoundEstimator(llvm::raw_ostream &OS) const;
 
-    virtual int dataDependenceBoundEstimator();
+    virtual int dataDependenceBoundEstimator() const;
+
+    virtual int findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
     
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
 

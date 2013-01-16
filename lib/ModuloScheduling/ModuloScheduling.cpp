@@ -45,9 +45,9 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   // REAL VARS
   delta = 0;
   
-  // FileParser &fp = getAnalysis<FileParser>();
-  // Architecture *architecture = fp.getArchitecture();
-
+  FileParser &fp = getAnalysis<FileParser>();
+  Architecture *currentArchitecture = fp.getArchitecture();
+  
   std::vector<llvm::Instruction *> instructions;
 
 
@@ -95,6 +95,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // Set the global variable, so it's accessible by the print method 
   scheduledInstructions = instructions;
+  architecture = currentArchitecture;
 
   return true;   // Program modified
 }
@@ -138,18 +139,10 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "delta: " << delta << "\n";
   OS << "blocks count: " << blocksCount << "\n";
   OS << "instructions count: " << instructionsCount << "\n";
-  u_int i = 0;
-  while (i < scheduledInstructions.size()) {
-    OS << "..:: " << (scheduledInstructions[i])->getOpcodeName() << "\n";
-    ++i;
-  }
-
-  FileParser &fp = getAnalysis<FileParser>();
-  Architecture *architecture = fp.getArchitecture();
 
   OS << "=======-------=======\n";
   std::vector<Instruction> A = architecture->getAllArch();
-  i = 0;
+  unsigned i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";
     OS << "\tInstr:\t" << A[i].getInstruction() << "\n";
@@ -157,8 +150,13 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "\tCycle:\t" << A[i].getCycle() << "\n";
     ++i;
   }
-  OS << "=======-------=======\n";
+  OS << "=======-------=======\n\n";
+  OS << "dataDependenceBoundEstimator = " << dataDependenceBoundEstimator() << "\n";
+  OS << "resourcesBoundEstimator --- \n" << resourcesBoundEstimator(OS);
 }
+
+
+
 
 
 std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
@@ -168,7 +166,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(architecture, instructions), dataDependenceBoundEstimator());
+  int deltaMin = 0; // std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
@@ -268,7 +266,17 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
+int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
+
+  // Get all the operands supported by the architecture
+  std::vector<Instruction> operands = architecture->getAllArch();
+
+  for (std::vector<Instruction>::iterator i = operands.begin(); i != operands.end(); ++i)
+  {
+    OS << "Operand: " << i->getInstruction() << "\n";
+  }
+
+
   /* PARAM: architecture
   creo una mappa: istr - contatore
   for(tutte le istruzioni){
@@ -290,22 +298,87 @@ int ModuloScheduling::resourcesBoundEstimator(Architecture* architecture, std::v
   return 2;
 }
 
-int ModuloScheduling::dataDependenceBoundEstimator(){
-  /* PARAM: instructions
-    retrieve the data-dependence graph;
-    per ogni istr, abbiamo la lista degli usi = le var che usa quella istruzione
-    oppure usa SCEV: "dammi l'espressione corrispondente alla b..."
-    una delle foglie sarà una recursive scev
-      se la trovi, vuol dire che c'è un loop!
-    retrieve cycles in that graph;
-    for(every cycle found){
-      dataDependenceBound = latency of the chain;
+
+
+int ModuloScheduling::dataDependenceBoundEstimator() const{
+
+  // Create a map: {instruction, isVisited}
+  std::map<llvm::Instruction *, bool> instructionsMap;
+  for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
+    instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
   }
-  return dataDependenceBoundEstimator = max(all bounds found);
-  CI PENSIAMO POI...
-  */
-  return 1;
+
+  int finalBound = 0;
+  int tempBound = 0;
+
+  // For all the instructions
+  for(unsigned i = 0; i < scheduledInstructions.size(); ++i) {
+
+    tempBound = 0;
+
+    // Skip "phi" function: they will not be scheduled on the pipeline
+    if(!llvm::StringRef("phi").equals(scheduledInstructions[i]->getOpcodeName())){
+
+      // Recursively find definitions of the operands of the instruction
+      tempBound = findDefRecursive(instructionsMap, scheduledInstructions[i], 0);
+    }
+
+    if(tempBound > finalBound)
+      finalBound = tempBound;
+  }
+
+  return finalBound;  
 }
+
+int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{
+  
+  /*
+  if(!llvm::StringRef("phi").equals(currentI->getOpcodeName())){
+    // Print to screen
+    for (int i = 0; i <= offset; ++i)
+      OS << "  ";
+
+    OS << offset << " - " << currentI->getOpcodeName() << "\n";
+  }
+  */
+
+  // Set the current instruction as visited
+  instructionsMap[currentI] = true;
+
+  // Final and temp offset
+  int finalOffset = 0;
+  int currentOffset = 0;
+
+  // For all the definitions
+  for (llvm::User::op_iterator i = currentI->op_begin(), e = currentI->op_end(); i != e; ++i) {
+
+    // Reset the current offset 
+    currentOffset = 0;
+
+    // For all the instruction defining one of the current instruction's operators
+    if(llvm::Instruction * definerI = llvm::dyn_cast<llvm::Instruction>(*i)){
+          
+      // If the definer instruction hasn't been visited
+      if(instructionsMap[definerI] == false){
+
+        if(llvm::StringRef("phi").equals(definerI->getOpcodeName()))
+          currentOffset = findDefRecursive(instructionsMap, definerI, offset);      // Find definers recursively, without incrementing the offset (ignore "phi" functions)     
+        else
+          currentOffset = findDefRecursive(instructionsMap, definerI, offset + 1);  // Find definers recursively, incrementing the offset    
+      }else{
+        currentOffset = offset + 1;
+      }
+    }
+    
+    if(currentOffset > finalOffset)
+      finalOffset = currentOffset;      // Update the offset
+    
+  }
+
+  return finalOffset;
+}
+
+
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
   // No heuristic has been implemented to sort the instructions. 
