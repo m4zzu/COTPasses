@@ -30,7 +30,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   delta = 0;
   
   FileParser &fp = getAnalysis<FileParser>();
-  Architecture *architecture = fp.getArchitecture();
+  Architecture *currentArchitecture = fp.getArchitecture();
 
   std::vector<llvm::Instruction *> instructions;
 
@@ -71,6 +71,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // Set the global variable, so it's accessible by the print method 
   scheduledInstructions = instructions;
+  architecture = currentArchitecture;
 
   return true;   // Program modified
 }
@@ -94,9 +95,6 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "blocks count: " << blocksCount << "\n";
   OS << "instructions count: " << instructionsCount << "\n";
 
-  FileParser &fp = getAnalysis<FileParser>();
-  Architecture *architecture = fp.getArchitecture();
-
   OS << "=======-------=======\n";
   std::vector<Instruction> A = architecture->getAllArch();
   unsigned i = 0;
@@ -107,8 +105,9 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "\tCycle:\t" << A[i].getCycle() << "\n";
     ++i;
   }
-  OS << "=======-------=======\n";
-  OS << dataDependenceBoundEstimator() << "\n";
+  OS << "=======-------=======\n\n";
+  OS << "dataDependenceBoundEstimator = " << dataDependenceBoundEstimator() << "\n";
+  OS << "resourcesBoundEstimator --- \n" << resourcesBoundEstimator(OS);
 }
 
 
@@ -122,7 +121,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(architecture, instructions), dataDependenceBoundEstimator());
+  int deltaMin = 0; // std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
@@ -221,7 +220,17 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
+int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
+
+  // Get all the operands supported by the architecture
+  std::vector<Instruction> operands = architecture->getAllArch();
+
+  for (std::vector<Instruction>::iterator i = operands.begin(); i != operands.end(); ++i)
+  {
+    OS << "Operand: " << i->getInstruction() << "\n";
+  }
+
+
   /* PARAM: architecture
   creo una mappa: istr - contatore
   for(tutte le istruzioni){
@@ -245,7 +254,7 @@ int ModuloScheduling::resourcesBoundEstimator(Architecture* architecture, std::v
 
 
 
-int ModuloScheduling::dataDependenceBoundEstimator(){
+int ModuloScheduling::dataDependenceBoundEstimator() const{
 
   // Create a map: {instruction, isVisited}
   std::map<llvm::Instruction *, bool> instructionsMap;
@@ -275,7 +284,7 @@ int ModuloScheduling::dataDependenceBoundEstimator(){
   return finalBound;  
 }
 
-int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset){
+int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{
   
   /*
   if(!llvm::StringRef("phi").equals(currentI->getOpcodeName())){
