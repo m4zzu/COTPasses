@@ -102,9 +102,9 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
-  llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
-  llvm::IRBuilder<> builder(llvm::getGlobalContext());
-  builder.SetInsertPoint(CB);
+  // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
+  // llvm::IRBuilder<> builder(llvm::getGlobalContext());
+  // builder.SetInsertPoint(CB);
 
   // llvm::iplist<llvm::NodeTy, llvm::Traits> il = CB->getInstList();
   // llvm::Instruction *pi = llvm::dyn_cast<llvm::Instruction>(CB->getFirstNonPHI());
@@ -141,7 +141,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "instructions count: " << instructionsCount << "\n";
 
   OS << "=======-------=======\n";
-  std::vector<Instruction> A = architecture->getAllArch();
+  std::vector<Operand> A = architecture->getAllArch();
   unsigned i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";
@@ -152,7 +152,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   }
   OS << "=======-------=======\n\n";
   OS << "dataDependenceBoundEstimator = " << dataDependenceBoundEstimator() << "\n";
-  OS << "resourcesBoundEstimator --- \n" << resourcesBoundEstimator(OS);
+  OS << "resourcesBoundEstimator --- " << resourcesBoundEstimator(OS) << "\n";
 }
 
 
@@ -269,9 +269,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
 int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
 
   // Get all the operands supported by the architecture
-  std::vector<Instruction> operands = architecture->getAllArch();
+  std::vector<Operand> operands = architecture->getAllArch();
 
-  for (std::vector<Instruction>::iterator i = operands.begin(); i != operands.end(); ++i)
+  for (std::vector<Operand>::iterator i = operands.begin(); i != operands.end(); ++i)
   {
     OS << "Operand: " << i->getInstruction() << "\n";
   }
