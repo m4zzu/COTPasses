@@ -25,6 +25,8 @@
 
 #include <map>
 #include <vector>
+#include <string>
+#include <math.h>
 
 using namespace cot;
 
@@ -150,14 +152,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "\tCycle:\t" << A[i].getCycle() << "\n";
     ++i;
   }
-  OS << "=======-------=======\n\n";
-  OS << "dataDependenceBoundEstimator = " << dataDependenceBoundEstimator() << "\n";
-  OS << "resourcesBoundEstimator --- " << resourcesBoundEstimator(OS) << "\n";
 }
-
-
-
-
 
 std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
 
@@ -166,7 +161,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = 0; // std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
+  int deltaMin = std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
@@ -266,19 +261,10 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
-
-  // Get all the operands supported by the architecture
-  std::vector<Operand> operands = architecture->getAllArch();
-
-  for (std::vector<Operand>::iterator i = operands.begin(); i != operands.end(); ++i)
-  {
-    OS << "Operand: " << i->getInstruction() << "\n";
-  }
-
-
+int ModuloScheduling::resourcesBoundEstimator() {
   /* PARAM: architecture
   creo una mappa: istr - contatore
+
   for(tutte le istruzioni){
     se è presente nella mappa
       incremento
@@ -295,13 +281,45 @@ int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
   }
   return delta;
   */
-  return 2;
+
+  // Get all the operands supported by the architecture
+  std::vector<std::string> operands = architecture->getSupportedOperand();
+  std::map<std::string, int> instructionsMap;
+  int delta = 0, deltaTemp = 0, numCicliIstr = 0;
+
+  for (std::vector<std::string>::iterator op = operands.begin();
+                                          op != operands.end();
+                                          ++op)
+    instructionsMap.insert(std::pair<std::string, int>(*op, 0));
+
+  for (std::vector<llvm::Instruction *>::const_iterator istr = scheduledInstructions.begin();
+                                                        istr != scheduledInstructions.end();
+                                                        ++istr) {
+    std::string op = (*istr)->getOpcodeName();
+    if (instructionsMap.find(op) != instructionsMap.end())
+      ++instructionsMap[op];
+    else
+      instructionsMap.insert(std::pair<std::string, int>(op, 1));
+  }
+
+  for (std::map<std::string, int>::iterator record = instructionsMap.begin();
+                                            record != instructionsMap.end();
+                                            ++record) {
+    numCicliIstr = architecture->getCycle(record->first);
+    std::map<std::string, int>::iterator it = instructionsMap.find(record->first);
+    if (it != instructionsMap.end() && numCicliIstr > 0) {
+      deltaTemp = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
+      if(deltaTemp > delta)
+        delta = deltaTemp;
+    }
+  }
+
+  return delta;
 }
 
 
 
-int ModuloScheduling::dataDependenceBoundEstimator() const{
-
+int ModuloScheduling::dataDependenceBoundEstimator() {
   // Create a map: {instruction, isVisited}
   std::map<llvm::Instruction *, bool> instructionsMap;
   for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
@@ -327,7 +345,7 @@ int ModuloScheduling::dataDependenceBoundEstimator() const{
       finalBound = tempBound;
   }
 
-  return finalBound;  
+  return finalBound;
 }
 
 int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{

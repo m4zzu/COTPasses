@@ -65,9 +65,9 @@ namespace cot {
     // author: Andrew W. Appel
     virtual std::vector<llvm::Instruction *> schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
 
-    virtual int resourcesBoundEstimator(llvm::raw_ostream &OS) const;
+    virtual int resourcesBoundEstimator();
 
-    virtual int dataDependenceBoundEstimator() const;
+    virtual int dataDependenceBoundEstimator();
 
     virtual int findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
     
