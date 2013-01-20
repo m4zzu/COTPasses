@@ -202,9 +202,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
         if(schedTime[currentInstruction] == -1){
 
           // If no conflicts
-          if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
-            schedTime[currentInstruction] = t;
-          }
+          // if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
+          //   schedTime[currentInstruction] = t;
+          // }
         }
       }
 
@@ -230,11 +230,11 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
       }
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
-      for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
-          conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
-          conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
-        schedTime[conflictingInstruction] = -1;
-      }
+      // for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
+      //     conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
+      //     conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
+      //   schedTime[conflictingInstruction] = -1;
+      // }
     }
 
     // If all instructions are scheduled
@@ -427,8 +427,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
   */
   std::vector<llvm::Instruction *> pred;
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
-                                                instr != instructions.end();
-                                                ++instr) {
+                                                  instr != instructions.end();
+                                                  ++instr) {
     if ((*instr) == h)
       break;
     pred.push_back(*instr);
@@ -454,8 +454,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruct
   bool flag = 0;
   std::vector<llvm::Instruction *> succ;
   for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
-                                                istr != instructions.end();
-                                                ++istr) {
+                                                  istr != instructions.end();
+                                                  ++istr) {
     if (flag)
       succ.push_back(*istr);
     if ((*istr) == h)
@@ -470,9 +470,36 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
   return 2;
 }
 
-llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions){
+bool ModuloScheduling::resourcesConflict(std::vector<std::string> a, std::vector<std::string> b) {
+  for (std::vector<std::string>::iterator ua = a.begin();
+                                         ua != a.end();
+                                         ++ua) {
+    for (std::vector<std::string>::iterator ub = b.begin();
+                                            ub != b.end();
+                                            ++ub){
+      if (*ua == *ub)
+        return true;
+    }
+  }
+  return false;
+}
+
+llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions) {
   /* Find resource conflicts
   */
+  bool flag = false;
+  std::vector<std::string> unitsCurrent = architecture->getUnit(currentInstruction->getOpcodeName());
+  for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
+                                                  instr != instructions.end();
+                                                  ++instr) {
+    if (flag) {
+      std::vector<std::string> units = architecture->getUnit((*instr)->getOpcodeName());
+      if (resourcesConflict(unitsCurrent, units))
+        return *instr;
+    }
+    if (*instr == currentInstruction)
+      flag = true;
+  }
   return NULL;
 }
 
