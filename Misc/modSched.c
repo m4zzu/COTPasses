@@ -19,3 +19,24 @@ int main(void) {
 
 	return 0;
 }
+
+/*
+Suggerimento da Marco Minutoli: 
+provare a mettere una chiamata a funzione per avere due basic blocks nel loop body
+
+int sum (int a, int b);
+
+int pippo(){
+
+	int a = 0;
+
+	int b = 0
+
+	while (true) {
+		++a;
+		b = sum (a, b);
+		a = 2 * a;
+	}
+}
+
+*/

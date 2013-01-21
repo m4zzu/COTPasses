@@ -419,6 +419,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
 }
 
 std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions) {
+
   /*
   // Find all the successors of an instruction
   // --- NO!!
