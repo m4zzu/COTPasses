@@ -4,14 +4,14 @@
 
 namespace cot {
 
-struct Instruction
+struct Operand
 {
   private:
     std::string instruction;
     std::string unit;
     int cycle;
   public:
-    Instruction& setInstruction(std::string instr_str_ref, std::string unit_str_ref, int cycle_str_ref) {
+    Operand& setInstruction(std::string instr_str_ref, std::string unit_str_ref, int cycle_str_ref) {
       instruction = instr_str_ref;
       unit = unit_str_ref;
       cycle = cycle_str_ref;
@@ -26,7 +26,7 @@ class Architecture
 {
 public:
   Architecture() {
-    arch = new std::vector<Instruction>;
+    arch = new std::vector<Operand>;
   }
   ~Architecture() {
     delete arch;
@@ -36,11 +36,12 @@ public:
   void addInstruction(std::string i, std::string u, std::string c);
   int getCycle(std::string instruction);
   std::vector<std::string> getUnit(std::string instruction);
-  std::vector<Instruction> getAllArch() { return *arch; };
+  std::vector<Operand> getAllArch() { return *arch; };
   int getNumberOfUnits(std::string instruction);
+  std::vector<std::string> getSupportedOperand();
 
 private:
-  std::vector<Instruction> *arch;
+  std::vector<Operand> *arch;
 
 };
 

@@ -59,7 +59,7 @@ void FileParser::print(llvm::raw_ostream &OS,
     return;
 
   OS << "=======-------=======\n";
-  std::vector<Instruction> A = architecture->getAllArch();
+  std::vector<Operand> A = architecture->getAllArch();
   u_int i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";

@@ -25,6 +25,8 @@
 
 #include <map>
 #include <vector>
+#include <string>
+#include <math.h>
 
 using namespace cot;
 
@@ -102,9 +104,9 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
-  llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
-  llvm::IRBuilder<> builder(llvm::getGlobalContext());
-  builder.SetInsertPoint(CB);
+  // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
+  // llvm::IRBuilder<> builder(llvm::getGlobalContext());
+  // builder.SetInsertPoint(CB);
 
   // llvm::iplist<llvm::NodeTy, llvm::Traits> il = CB->getInstList();
   // llvm::Instruction *pi = llvm::dyn_cast<llvm::Instruction>(CB->getFirstNonPHI());
@@ -141,7 +143,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   OS << "instructions count: " << instructionsCount << "\n";
 
   OS << "=======-------=======\n";
-  std::vector<Instruction> A = architecture->getAllArch();
+  std::vector<Operand> A = architecture->getAllArch();
   unsigned i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";
@@ -150,14 +152,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "\tCycle:\t" << A[i].getCycle() << "\n";
     ++i;
   }
-  OS << "=======-------=======\n\n";
-  OS << "dataDependenceBoundEstimator = " << dataDependenceBoundEstimator() << "\n";
-  OS << "resourcesBoundEstimator --- \n" << resourcesBoundEstimator(OS);
 }
-
-
-
-
 
 std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
 
@@ -166,7 +161,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = 0; // std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
+  int deltaMin = std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
@@ -207,9 +202,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
         if(schedTime[currentInstruction] == -1){
 
           // If no conflicts
-          if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
-            schedTime[currentInstruction] = t;
-          }
+          // if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
+          //   schedTime[currentInstruction] = t;
+          // }
         }
       }
 
@@ -235,11 +230,11 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
       }
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
-      for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
-          conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
-          conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
-        schedTime[conflictingInstruction] = -1;
-      }
+      // for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
+      //     conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
+      //     conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
+      //   schedTime[conflictingInstruction] = -1;
+      // }
     }
 
     // If all instructions are scheduled
@@ -266,19 +261,10 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
-
-  // Get all the operands supported by the architecture
-  std::vector<Instruction> operands = architecture->getAllArch();
-
-  for (std::vector<Instruction>::iterator i = operands.begin(); i != operands.end(); ++i)
-  {
-    OS << "Operand: " << i->getInstruction() << "\n";
-  }
-
-
+int ModuloScheduling::resourcesBoundEstimator() {
   /* PARAM: architecture
   creo una mappa: istr - contatore
+
   for(tutte le istruzioni){
     se è presente nella mappa
       incremento
@@ -295,13 +281,45 @@ int ModuloScheduling::resourcesBoundEstimator(llvm::raw_ostream &OS) const{
   }
   return delta;
   */
-  return 2;
+
+  // Get all the operands supported by the architecture
+  std::vector<std::string> operands = architecture->getSupportedOperand();
+  std::map<std::string, int> instructionsMap;
+  int delta = 0, deltaTemp = 0, numCicliIstr = 0;
+
+  for (std::vector<std::string>::iterator op = operands.begin();
+                                          op != operands.end();
+                                          ++op)
+    instructionsMap.insert(std::pair<std::string, int>(*op, 0));
+
+  for (std::vector<llvm::Instruction *>::const_iterator istr = scheduledInstructions.begin();
+                                                        istr != scheduledInstructions.end();
+                                                        ++istr) {
+    std::string op = (*istr)->getOpcodeName();
+    if (instructionsMap.find(op) != instructionsMap.end())
+      ++instructionsMap[op];
+    else
+      instructionsMap.insert(std::pair<std::string, int>(op, 1));
+  }
+
+  for (std::map<std::string, int>::iterator record = instructionsMap.begin();
+                                            record != instructionsMap.end();
+                                            ++record) {
+    numCicliIstr = architecture->getCycle(record->first);
+    std::map<std::string, int>::iterator it = instructionsMap.find(record->first);
+    if (it != instructionsMap.end() && numCicliIstr > 0) {
+      deltaTemp = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
+      if(deltaTemp > delta)
+        delta = deltaTemp;
+    }
+  }
+
+  return delta;
 }
 
 
 
-int ModuloScheduling::dataDependenceBoundEstimator() const{
-
+int ModuloScheduling::dataDependenceBoundEstimator() {
   // Create a map: {instruction, isVisited}
   std::map<llvm::Instruction *, bool> instructionsMap;
   for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
@@ -327,7 +345,7 @@ int ModuloScheduling::dataDependenceBoundEstimator() const{
       finalBound = tempBound;
   }
 
-  return finalBound;  
+  return finalBound;
 }
 
 int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{
@@ -409,8 +427,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
   */
   std::vector<llvm::Instruction *> pred;
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
-                                                instr != instructions.end();
-                                                ++instr) {
+                                                  instr != instructions.end();
+                                                  ++instr) {
     if ((*instr) == h)
       break;
     pred.push_back(*instr);
@@ -437,8 +455,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruct
   bool flag = 0;
   std::vector<llvm::Instruction *> succ;
   for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
-                                                istr != instructions.end();
-                                                ++istr) {
+                                                  istr != instructions.end();
+                                                  ++istr) {
     if (flag)
       succ.push_back(*istr);
     if ((*istr) == h)
@@ -453,9 +471,36 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
   return 2;
 }
 
-llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions){
+bool ModuloScheduling::resourcesConflict(std::vector<std::string> a, std::vector<std::string> b) {
+  for (std::vector<std::string>::iterator ua = a.begin();
+                                         ua != a.end();
+                                         ++ua) {
+    for (std::vector<std::string>::iterator ub = b.begin();
+                                            ub != b.end();
+                                            ++ub){
+      if (*ua == *ub)
+        return true;
+    }
+  }
+  return false;
+}
+
+llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions) {
   /* Find resource conflicts
   */
+  bool flag = false;
+  std::vector<std::string> unitsCurrent = architecture->getUnit(currentInstruction->getOpcodeName());
+  for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
+                                                  instr != instructions.end();
+                                                  ++instr) {
+    if (flag) {
+      std::vector<std::string> units = architecture->getUnit((*instr)->getOpcodeName());
+      if (resourcesConflict(unitsCurrent, units))
+        return *instr;
+    }
+    if (*instr == currentInstruction)
+      flag = true;
+  }
   return NULL;
 }
 
