@@ -321,6 +321,7 @@ int ModuloScheduling::resourcesBoundEstimator() {
 
 int ModuloScheduling::dataDependenceBoundEstimator() {
   // Create a map: {instruction, isVisited}
+  // Init isVisited to false
   std::map<llvm::Instruction *, bool> instructionsMap;
   for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
     instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
@@ -425,7 +426,24 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
   }
   return pred;
   */
+
   std::vector<llvm::Instruction *> pred;
+  /*
+  mappa dei predecessori
+  for(tutti i predecessori){
+    if(predecessore corrente è una phi){
+      cerca ricorsivamente
+    }else{
+      if(istruzione non è nella mappa)
+        aggiungila;
+    }
+  }
+  */
+
+
+
+
+
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
                                                   instr != instructions.end();
                                                   ++instr) {
