@@ -216,17 +216,17 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
       }
       lastTime[currentInstruction] = schedTime[currentInstruction];
 
-      // std::vector<llvm::Instruction *> successors = findSuccessors(currentInstruction, instructions);
-      std::vector<llvm::Instruction *> successors;
+      std::set<llvm::Instruction *> successors = findSuccessors(currentInstruction);
 
       // if successor of h is execute before the end of h, then unschedule it
-      for(unsigned k = 0; k < successors.size(); ++k){
-
-        llvm::Instruction* currentSuccessor = successors[k];
-
-        if(schedTime[currentSuccessor] != -1){
-          if(schedTime[currentInstruction] + delay(currentInstruction, currentSuccessor, instructions) > schedTime[currentSuccessor]){
-            schedTime[currentSuccessor] = -1;
+      for (std::set<llvm::Instruction *>::iterator firstS = successors.begin(), 
+                                                   lastS = successors.end(); 
+                                                   firstS != lastS; 
+                                                   ++firstS){
+        if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
+          if(schedTime[currentS] != -1){
+            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions) > schedTime[currentS])
+              schedTime[currentS] = -1;
           }
         }
       }
@@ -453,7 +453,7 @@ std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instructi
           // Try to cast
           if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*first))
             if(pred.find(currentP) == pred.end())
-              pred.insert(currentP);
+              pred.insert(currentP);                      // Add it to the predecessors, if it's not present
         }
 
       }else{
@@ -467,22 +467,9 @@ std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instructi
   return pred;
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions) {
+std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction * currentI) {
 
-  /*
-  // Find all the successors of an instruction
-  // --- NO!!
-  iteratore sulle instructions;
-  vettore succ;
-  while(iteratore è diverso dalla instrPassata){
-    // Skip
-  }
-
-  while(finisce vettore){
-    succ.push_back(instrCorrente);
-  }
-  return succ;
-  */
+  /* Old implementation - Successors in the BB
   bool flag = 0;
   std::vector<llvm::Instruction *> succ;
   for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
@@ -493,6 +480,43 @@ std::vector<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruct
     if ((*istr) == h)
       flag = 1;
   }
+  return succ;
+  */
+
+  // Init the vector of successors
+  std::set<llvm::Instruction *> succ;
+
+  // For all the instruction using the current instruction's result
+  for (llvm::value_use_iterator<llvm::User> i = currentI->use_begin(), e = currentI->use_end(); i != e; ++i) {
+
+    // Try to cast
+    if(llvm::Instruction * userI = llvm::dyn_cast<llvm::Instruction>(*i)){
+      
+      // If it's a phi instruction
+      if(llvm::StringRef("phi").equals(userI->getOpcodeName())){
+
+        // Find its successors
+        std::set<llvm::Instruction *> recursiveSucc = findSuccessors(userI);
+
+        // Add them in the vector of successors, if they're not present
+        for (std::set<llvm::Instruction *>::iterator first = recursiveSucc.begin(), 
+                                                     last = recursiveSucc.end(); 
+                                                     first != last; 
+                                                     ++first){
+          // Try to cast
+          if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*first))
+            if(succ.find(currentS) == succ.end())
+              succ.insert(currentS);              // Add it to the successors, if it's not present
+        }
+
+      }else{
+        // Add it to the successors, if it's not present
+        if(succ.find(userI) == succ.end())
+          succ.insert(userI);
+      }
+    }
+  }
+
   return succ;
 }
 

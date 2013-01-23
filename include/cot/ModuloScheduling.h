@@ -77,7 +77,7 @@ namespace cot {
 
     virtual std::set<llvm::Instruction *> findPredecessors(llvm::Instruction * currentI);
 
-    virtual std::vector<llvm::Instruction *> findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions);
+    virtual std::set<llvm::Instruction *> findSuccessors(llvm::Instruction * currentI);
 
     virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions);
 
