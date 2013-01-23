@@ -75,7 +75,7 @@ namespace cot {
 
     virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
 
-    virtual std::vector<llvm::Instruction *> findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions);
+    virtual std::set<llvm::Instruction *> findPredecessors(llvm::Instruction * currentI);
 
     virtual std::vector<llvm::Instruction *> findSuccessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions);
 

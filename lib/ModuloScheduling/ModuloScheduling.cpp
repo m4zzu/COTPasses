@@ -183,18 +183,20 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
         budget > 0 && currentInstruction != NULL;
         currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--){
       
-      std::vector<llvm::Instruction *> predecessors = findPredecessors(currentInstruction, instructions);
+      std::set<llvm::Instruction *> predecessors = findPredecessors(currentInstruction);
       int tMin = 0;
 
       // Find the most slow predecessor and update tMin
-      for(unsigned j = 0; j < predecessors.size(); ++j){
-
-        llvm::Instruction* currentPredecessor = predecessors[j];
-
-        if(schedTime[currentPredecessor] != -1){
-          int currentSchedTime = schedTime[currentPredecessor] + delay(currentPredecessor, currentInstruction, instructions);
-          tMin = std::max(tMin, currentSchedTime);
-        } 
+      for (std::set<llvm::Instruction *>::iterator firstP = predecessors.begin(), 
+                                                   lastP = predecessors.end(); 
+                                                   firstP != lastP; 
+                                                   ++firstP){
+        if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*firstP)){
+          if(schedTime[currentP] != -1){
+            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions);
+            tMin = std::max(tMin, currentSchedTime);
+          }
+        }
       }
 
       // Try to schedule h between tMin and tMin + delta - 1
@@ -415,35 +417,9 @@ llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std:
   return NULL;                       // NO unscheduled instruction found
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * h, std::vector<llvm::Instruction *> instructions) {
-  /*
-  // Find all the predecessors of an instruction
-  // --- NO!!
-  iteratore sulle instructions;
-  vettore pred;
-  while(iteratore è diverso dalla instrPassata){
-    pred.push_back(instrCorrente);
-  }
-  return pred;
-  */
+std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instruction * currentI) {
 
-  std::vector<llvm::Instruction *> pred;
-  /*
-  mappa dei predecessori
-  for(tutti i predecessori){
-    if(predecessore corrente è una phi){
-      cerca ricorsivamente
-    }else{
-      if(istruzione non è nella mappa)
-        aggiungila;
-    }
-  }
-  */
-
-
-
-
-
+  /* Old implementation - Predecessors in the BB
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
                                                   instr != instructions.end();
                                                   ++instr) {
@@ -451,6 +427,43 @@ std::vector<llvm::Instruction *> ModuloScheduling::findPredecessors(llvm::Instru
       break;
     pred.push_back(*instr);
   }
+  return pred;
+  */
+
+  // Init the vector of predecessors
+  std::set<llvm::Instruction *> pred;
+
+  // For all the instruction defining one of the current instruction's operators
+  for (llvm::User::op_iterator i = currentI->op_begin(), e = currentI->op_end(); i != e; ++i) {
+
+    // Try to cast
+    if(llvm::Instruction * definerI = llvm::dyn_cast<llvm::Instruction>(*i)){
+      
+      // If it's a phi instruction
+      if(llvm::StringRef("phi").equals(definerI->getOpcodeName())){
+
+        // Find its predecessors
+        std::set<llvm::Instruction *> recursivePred = findPredecessors(definerI);
+
+        // Add them in the vector of predecessors, if it's not present
+        for (std::set<llvm::Instruction *>::iterator first = recursivePred.begin(), 
+                                                     last = recursivePred.end(); 
+                                                     first != last; 
+                                                     ++first){
+          // Try to cast
+          if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*first))
+            if(pred.find(currentP) == pred.end())
+              pred.insert(currentP);
+        }
+
+      }else{
+        // Add it to the predecessors, if it's not present
+        if(pred.find(definerI) == pred.end())
+          pred.insert(definerI);
+      }
+    }
+  }
+
   return pred;
 }
 
