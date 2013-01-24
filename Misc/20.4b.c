@@ -5,11 +5,6 @@
 
 int main(void) {
 
-	int U[N] = {10, 9, 8, 7, 6};
-	int X[N] = {5, 4, 3, 2, 1};
-	int W[N] = {0, 0, 0, 0, 0};
-	int V[N] = {0, 0, 0, 0, 0};
-
 	int a, b, c, d, e, f, j;
 
 	j = 0;
@@ -20,10 +15,10 @@ int main(void) {
 	for(int i = 1; i < N; ++i){
 		a = j + b;
 		b = a + f;
-		c = e + j;
-		d = f + c;
+		c = e - j;
+		d = f - c;
 		e = b + d;
-		f = i * 2;
+		f = i / 2;
 		j = i * 4;
 	}
 
