@@ -12,6 +12,10 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 
+#if !defined(FILE_CONF)
+  #define FILE_CONF "lib/ModuloScheduling/mips10000.cfg"
+#endif
+
 using namespace cot;
 
 char FileParser::ID = 0;
@@ -23,7 +27,7 @@ bool FileParser::runOnModule(llvm::Module &Mod) {
 void FileParser::initializePass() {
   architecture = new Architecture();
   llvm::OwningPtr<llvm::MemoryBuffer> fileConf;
-  llvm::error_code err = llvm::MemoryBuffer::getFile("lib/ModuloScheduling/mips10000.cfg", fileConf);
+  llvm::error_code err = llvm::MemoryBuffer::getFile(FILE_CONF, fileConf);
   if (err != NULL && err.value() != 0) {
     return;
   }
@@ -63,9 +67,9 @@ void FileParser::print(llvm::raw_ostream &OS,
   u_int i = 0;
   while (i < A.size()) {
     OS << "Conf " << (i + 1) << ":\n";
-    OS << "\tInstr:\t" << A[i].getInstruction() << "\n";
-    OS << "\tUnit:\t" << A[i].getUnit() << "\n";
-    OS << "\tCycle:\t" << A[i].getCycle() << "\n";
+    OS << "  Instr:  " << A[i].getInstruction() << "\n";
+    OS << "  Unit:   " << A[i].getUnit() << "\n";
+    OS << "  Cycle:  " << A[i].getCycle() << "\n";
     ++i;
   }
   OS << "=======-------=======\n";
