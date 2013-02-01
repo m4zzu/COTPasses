@@ -45,19 +45,20 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // Init all the vars ---
   // REAL VARS
-  delta = 0;
-  
   FileParser &fp = getAnalysis<FileParser>();
   architecture = fp.getArchitecture();
   std::vector<llvm::Instruction *> instructions;
+  // std::vector<Operand> ops = architecture->getAllArch();
+  // for (std::vector<Operand>::iterator op = ops.begin();
+  //                                     op != ops.end();
+  //                                     ++op) {
+  //   resourceTable.insert(std::pair<std::string, std::vector<llvm::Instruction *> >(op->getUnit(), std::vector<llvm::Instruction>));
+  // }
 
   // TEMP VARS
   blocksCount = 0;
   instructionsCount = 0;
 
-  // llvm::Instruction *tempInstr
-
-  // controlla che la ind var sia incrementata di 1 (canonica)
   // loopBody: dev'essere un unico BB
   // scarta la induction variable: splitta in due il BB  e lasciala fuori
 
@@ -77,7 +78,7 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
                                      end = *currentBlock->end(); 
                                      istr != end; 
                                      ++istr) {
-          // instructionsCount += 1;
+          instructionsCount += 1;
           instructions.push_back(istr);
       }
     }
@@ -237,7 +238,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       }
       
 
-      unschedule(currentInstruction, &schedTime);
+
       std::vector<llvm::Instruction *> v;
       return v;
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
@@ -582,13 +583,25 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
   return true;
 }
 
-void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta) {
-  
+void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta) {(*schedTime)[currentI] = t;
+  int latency = architecture->getCycle(currentI->getOpcodeName());
+  std::vector<std::string> units = architecture->getUnit(currentI->getOpcodeName());
+
+  (*schedTime)[currentI] = t;
   while(getFirstConflictingInstruction(currentI, t) != NULL){
     unschedule(currentI, schedTime);
   }
-  (*schedTime)[currentI] = t;
-  
+  for (std::vector<std::string>::iterator unit = units.begin();
+                                          unit != units.end();
+                                         ++unit) {
+    if (resourceTable.find(*unit) != resourceTable.end() && 
+        resourceTable[*unit][t] != NULL) {
+      for (int i = t; i < (t + latency); ++i) {
+        int index = i % delta;
+        resourceTable[*unit][index] = currentI;
+      }
+    }
+  }
 }
 
 void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime){
@@ -597,9 +610,11 @@ void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::I
   for (std::vector<std::string>::iterator unit = units.begin();
                                           unit != units.end();
                                          ++unit) {
-    std::vector<llvm::Instruction *> unitTime = resourceTable[unit];
-    if (unitTime != NULL) {
-      
+    if (resourceTable.find(*unit) != resourceTable.end()) {
+      for (u_int i = 0; i < resourceTable[*unit].size(); ++i) {
+        if (resourceTable[*unit][i] == currentI)
+          resourceTable[*unit][i] = NULL;
+      }
     }
   }
 }
