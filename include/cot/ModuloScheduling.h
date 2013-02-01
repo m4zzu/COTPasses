@@ -81,7 +81,7 @@ namespace cot {
 
     virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions);
 
-    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions);
+    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t);
     virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
 
     virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
@@ -89,6 +89,8 @@ namespace cot {
     virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
 
     virtual void createNewBlock(llvm::BasicBlock *, std::vector<llvm::Instruction *>);
+
+    virtual bool schedule(llvm::Instruction *, std::vector<llvm::Instruction *> *, int);
 
   };
 

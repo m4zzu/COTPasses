@@ -8,9 +8,9 @@
 
 using namespace cot;
 
-void Architecture::addInstruction(std::string i, std::string u, std::string c) {
+void Architecture::addOperand(std::string i, std::string u, std::string c) {
   Operand record;
-  record.setInstruction(i, u, atoi(c.c_str()));
+  record.setOperand(i, u, atoi(c.c_str()));
   arch->push_back(record);
 }
 

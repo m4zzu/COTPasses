@@ -11,7 +11,7 @@ struct Operand
     std::string unit;
     int cycle;
   public:
-    Operand& setInstruction(std::string instr_str_ref, std::string unit_str_ref, int cycle_str_ref) {
+    Operand& setOperand(std::string instr_str_ref, std::string unit_str_ref, int cycle_str_ref) {
       instruction = instr_str_ref;
       unit = unit_str_ref;
       cycle = cycle_str_ref;
@@ -33,7 +33,7 @@ public:
   }
 
 public:
-  void addInstruction(std::string i, std::string u, std::string c);
+  void addOperand(std::string i, std::string u, std::string c);
   int getCycle(std::string instruction);
   std::vector<std::string> getUnit(std::string instruction);
   std::vector<Operand> getAllArch() { return *arch; };

@@ -82,16 +82,11 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
           // instructionsCount += 1;
           instructions.push_back(istr);
       }
-      // instructions = schedule(instructions);
-      // createNewBlock(currentBlock, instructions, i);
     }
-    // createNewBlock(currentBlock, instructions, i);
   }
 
-  // rifondi con il BB della ind var
-
   // Apply the algorithm
-  //instructions = schedule(instructions);
+  instructions = doScheduling(instructions);
   // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
   // deleteOldBlock();
 
@@ -154,7 +149,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   }
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
 
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
@@ -204,9 +199,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
         if(schedTime[currentInstruction] == -1){
 
           // If no conflicts
-          // if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
-          //   schedTime[currentInstruction] = t;
-          // }
+          if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
+            schedTime[currentInstruction] = t;
+          }
         }
       }
 
@@ -232,11 +227,11 @@ std::vector<llvm::Instruction *> ModuloScheduling::schedule(Architecture* archit
       }
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
-      // for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
-      //     conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
-      //     conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
-      //   schedTime[conflictingInstruction] = -1;
-      // }
+      for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
+          conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
+          conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
+        schedTime[conflictingInstruction] = -1;
+      }
     }
 
     // If all instructions are scheduled
@@ -567,6 +562,10 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
           return false;
   }
   return true;
+}
+
+bool ModuloScheduling::schedule(llvm::Instruction *instr, std::vector<llvm::Instruction *> *schedTime, int t) {
+
 }
 
 void ModuloScheduling::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
