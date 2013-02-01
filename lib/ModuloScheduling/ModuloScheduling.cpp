@@ -154,7 +154,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
+  int deltaMin = std::max(resourcesBoundEstimator(instructions), dataDependenceBoundEstimator());
 
   /* CURRENT STATUS OF TESTING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -280,9 +280,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 }
 
 
-int ModuloScheduling::resourcesBoundEstimator() {
+int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> instructions) {
 
-  llvm::errs() << "ENTERED IN: resourcesBoundEstimator --------------------\n\n";
+  llvm::errs() << "ENTERED IN: resourcesBoundEstimator --------------------\n";
 
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
@@ -297,12 +297,12 @@ int ModuloScheduling::resourcesBoundEstimator() {
   }
 
   // For all the instructions to be scheduled
-  for (std::vector<llvm::Instruction *>::const_iterator istr = scheduledInstructions.begin();
-                                                        istr != scheduledInstructions.end();
-                                                        ++istr) {
+  for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
+                                                  istr != instructions.end();
+                                                  ++istr) {
     std::string op = (*istr)->getOpcodeName();
 
-    // Increment the instruction count
+
     if (instructionsMap.find(op) != instructionsMap.end())
       ++instructionsMap[op];
     else
@@ -319,15 +319,16 @@ int ModuloScheduling::resourcesBoundEstimator() {
 
       // Estimate the bound of the current operand
       deltaTemp = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
-
-      llvm::errs() << record->first + ":";
-
       if(deltaTemp > delta)
         delta = deltaTemp;
     }
+
+    llvm::errs() << record->first << ": " << it->second << " occurrencies\n";
   }
 
-  llvm::errs() << "EXITING: resourcesBoundEstimator --------------------\n\n";
+  llvm::errs() << "Lower bound estimation: " << delta << "\n";
+
+  llvm::errs() << "EXITING: resourcesBoundEstimator --------------------\n";
 
   return delta;
 }

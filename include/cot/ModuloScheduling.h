@@ -66,7 +66,7 @@ namespace cot {
     // author: Andrew W. Appel
     virtual std::vector<llvm::Instruction *> doScheduling(std::vector<llvm::Instruction *> instructions);
 
-    virtual int resourcesBoundEstimator();
+    virtual int resourcesBoundEstimator(std::vector<llvm::Instruction *> instructions);
 
     virtual int dataDependenceBoundEstimator();
 
