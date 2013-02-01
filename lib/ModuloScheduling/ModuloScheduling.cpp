@@ -155,6 +155,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
   // Lower bound for delta
   int deltaMin = std::max(resourcesBoundEstimator(), dataDependenceBoundEstimator());
 
+  /* CURRENT STATUS OF TESTING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
 
@@ -245,7 +248,10 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         schedTime[conflictingInstruction] = -1;
       }
       */
+
+      /*
     }
+
 
     // If all instructions are scheduled
     if(scheduleCompleted(schedTime)){
@@ -264,69 +270,66 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
           ++iter){
         scheduledInstructions.push_back(iter->second);
       }
-
+      
       return scheduledInstructions;
     }
   }
+  */
+  return scheduledInstructions;
 }
 
 
 int ModuloScheduling::resourcesBoundEstimator() {
-  /* PARAM: architecture
-  creo una mappa: istr - contatore
 
-  for(tutte le istruzioni){
-    se è presente nella mappa
-      incremento
-    altrimenti
-      aggiungo: istr - 1
-  }
-
-  delta = 0;
-  for(sulla mappa){
-    numCicliIstr = arch.getCycle(chiave della mappa);
-    deltaTemp = roundUp(numCicliIstr*mappa.get(chiave)/getNumberOfUnits(chiave));
-    if(deltaTemp > delta)
-      delta = deltaTemp;
-  }
-  return delta;
-  */
+  llvm::errs() << "ENTERED IN: resourcesBoundEstimator --------------------\n\n";
 
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
   std::map<std::string, int> instructionsMap;
   int delta = 0, deltaTemp = 0, numCicliIstr = 0;
 
+  // Add all the operand available on the architecture in the new local map
   for (std::vector<std::string>::iterator op = operands.begin();
                                           op != operands.end();
-                                          ++op)
+                                          ++op){
     instructionsMap.insert(std::pair<std::string, int>(*op, 0));
+  }
 
+  // For all the instructions to be scheduled
   for (std::vector<llvm::Instruction *>::const_iterator istr = scheduledInstructions.begin();
                                                         istr != scheduledInstructions.end();
                                                         ++istr) {
     std::string op = (*istr)->getOpcodeName();
+
+    // Increment the instruction count
     if (instructionsMap.find(op) != instructionsMap.end())
       ++instructionsMap[op];
     else
-      instructionsMap.insert(std::pair<std::string, int>(op, 1));
+      instructionsMap.insert(std::pair<std::string, int>(op, 1));       // Add the new operand: it will be considered for the bound estimation as well
   }
 
+  // For every operand
   for (std::map<std::string, int>::iterator record = instructionsMap.begin();
                                             record != instructionsMap.end();
                                             ++record) {
     numCicliIstr = architecture->getCycle(record->first);
     std::map<std::string, int>::iterator it = instructionsMap.find(record->first);
     if (it != instructionsMap.end() && numCicliIstr > 0) {
+
+      // Estimate the bound of the current operand
       deltaTemp = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
+
+      llvm::errs() << record->first + ":";
+
       if(deltaTemp > delta)
         delta = deltaTemp;
     }
   }
 
+  llvm::errs() << "EXITING: resourcesBoundEstimator --------------------\n\n";
+
   return delta;
 }
-
 
 
 int ModuloScheduling::dataDependenceBoundEstimator() {
@@ -594,7 +597,7 @@ void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::I
   for (std::vector<std::string>::iterator unit = units.begin();
                                           unit != units.end();
                                          ++unit) {
-    std::vector<llvm::Instruction *> unitTime = resourceTalbe[unit];
+    std::vector<llvm::Instruction *> unitTime = resourceTable[unit];
     if (unitTime != NULL) {
       
     }
