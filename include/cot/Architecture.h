@@ -24,24 +24,24 @@ struct Operand
 
 class Architecture
 {
-public:
-  Architecture() {
-    arch = new std::vector<Operand>;
-  }
-  ~Architecture() {
-    delete arch;
-  }
+  public:
+    Architecture() {
+      arch = new std::vector<Operand>;
+    }
+    ~Architecture() {
+      delete arch;
+    }
 
-public:
-  void addOperand(std::string i, std::string u, std::string c);
-  int getCycle(std::string instruction);
-  std::vector<std::string> getUnit(std::string instruction);
-  std::vector<Operand> getAllArch() { return *arch; };
-  int getNumberOfUnits(std::string instruction);
-  std::vector<std::string> getSupportedOperand();
+  public:
+    void addOperand(std::string i, std::string u, std::string c);
+    int getCycle(std::string instruction);
+    std::vector<std::string> getUnit(std::string instruction);
+    std::vector<Operand> getAllArch() { return *arch; };
+    int getNumberOfUnits(std::string instruction);
+    std::vector<std::string> getSupportedOperand();
 
-private:
-  std::vector<Operand> *arch;
+  private:
+    std::vector<Operand> *arch;
 
 };
 

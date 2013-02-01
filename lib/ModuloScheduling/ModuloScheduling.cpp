@@ -48,10 +48,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   delta = 0;
   
   FileParser &fp = getAnalysis<FileParser>();
-  Architecture *currentArchitecture = fp.getArchitecture();
-  
+  architecture = fp.getArchitecture();
   std::vector<llvm::Instruction *> instructions;
-
 
   // TEMP VARS
   blocksCount = 0;
@@ -92,7 +90,6 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // Set the global variable, so it's accessible by the print method 
   scheduledInstructions = instructions;
-  architecture = currentArchitecture;
 
   return true;   // Program modified
 }
@@ -235,7 +232,11 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
           }
         }
       }
+      
 
+      unschedule(currentInstruction, &schedTime);
+      std::vector<llvm::Instruction *> v;
+      return v;
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
       /* ALREADY DONE IN SCHEDULE(...)
       for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, schedTime[currentInstruction]); 
@@ -583,17 +584,21 @@ void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Ins
   while(getFirstConflictingInstruction(currentI, t) != NULL){
     unschedule(currentI, schedTime);
   }
-
-  // in schedTime, metti t (NON t mod delta)
   (*schedTime)[currentI] = t;
-  // update architect...
+  
 }
-
-
 
 void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime){
   (*schedTime)[currentI] = -1;
-  // update architect...
+  std::vector<std::string> units = architecture->getUnit(currentI->getOpcodeName());
+  for (std::vector<std::string>::iterator unit = units.begin();
+                                          unit != units.end();
+                                         ++unit) {
+    std::vector<llvm::Instruction *> unitTime = resourceTalbe[unit];
+    if (unitTime != NULL) {
+      
+    }
+  }
 }
 
 

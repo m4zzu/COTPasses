@@ -53,6 +53,7 @@ namespace cot {
     int delta;
     std::vector<llvm::Instruction *> scheduledInstructions;
     Architecture *architecture;
+    std::map<std::string, std::vector<llvm::Instruction *> > resourceTable;
 
     // TEMP VARS
     int blocksCount;

@@ -15,33 +15,32 @@ void Architecture::addOperand(std::string i, std::string u, std::string c) {
 }
 
 int Architecture::getCycle(std::string instruction) {
-  u_int i = 0;
-  while (i < arch->size()) {
-    Operand instr = arch->at(i);
-    if (instruction.compare(instr.getInstruction()) == 0)
-      return instr.getCycle();
-    ++i;
+  for (std::vector<Operand>::iterator op = arch->begin();
+                                      op != arch->end();
+                                      ++op) {
+    if (instruction.compare(op->getInstruction()) == 0)
+      return op->getCycle();
   }
   return -1;
 }
 
 std::vector<std::string> Architecture::getUnit(std::string instruction) {
   std::vector<std::string> v;
-  u_int i = 0;
-  while (i < arch->size()) {
-    Operand instr = arch->at(i);
-    if (instr.getInstruction().compare(instruction) == 0)
-      v.push_back(instr.getUnit());
-    ++i;
+  for (std::vector<Operand>::iterator op = arch->begin();
+                                      op != arch->end();
+                                      ++op) {
+    if (op->getInstruction().compare(instruction) == 0)
+      v.push_back(op->getUnit());
   }
   return v;
 }
 
 int Architecture::getNumberOfUnits(std::string instruction) {
-  u_int tot = 0, i;
-  for (i = 0; i < arch->size(); ++i) {
-    Operand instr = arch->at(i);
-    if (instr.getInstruction().compare(instruction) == 0)
+  u_int tot = 0;
+  for (std::vector<Operand>::iterator op = arch->begin();
+                                      op != arch->end();
+                                      ++op) {
+    if (op->getInstruction().compare(instruction) == 0)
       ++tot;
   }
   return tot;
@@ -49,7 +48,9 @@ int Architecture::getNumberOfUnits(std::string instruction) {
 
 std::vector<std::string> Architecture::getSupportedOperand() {
   std::vector<std::string> supportedOp;
-  for (std::vector<Operand>::iterator op = arch->begin(); op != arch->end(); ++op) {
+  for (std::vector<Operand>::iterator op = arch->begin();
+                                      op != arch->end();
+                                      ++op) {
     std::string opName = op->getInstruction();
     if (std::find(supportedOp.begin(), supportedOp.end(), opName) == supportedOp.end())
       supportedOp.push_back(opName);
