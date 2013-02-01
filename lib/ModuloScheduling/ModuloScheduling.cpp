@@ -149,7 +149,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   }
 }
 
-std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* architecture, std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> instructions){
 
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
@@ -173,11 +173,13 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* ar
 
     llvm::Instruction* currentInstruction = NULL;
 
-    // While we have attempts and some instructions are not scheduled
+    // While we have attempts and some instructions are not scheduled, 
+    // try to schedule them, decrementing the budget of attempts at every iteration
     for(currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime);
         budget > 0 && currentInstruction != NULL;
         currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--){
       
+      // Find all the predecessors, using llvm::User methods (intra-loop body)
       std::set<llvm::Instruction *> predecessors = findPredecessors(currentInstruction);
       int tMin = 0;
 
@@ -187,6 +189,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* ar
                                                    firstP != lastP; 
                                                    ++firstP){
         if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*firstP)){
+
+          // If the predecessor is scheduled
           if(schedTime[currentP] != -1){
             int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions);
             tMin = std::max(tMin, currentSchedTime);
@@ -198,19 +202,25 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* ar
        for(int t = tMin; t < tMin + delta - 1; ++t){
         if(schedTime[currentInstruction] == -1){
 
-          // If no conflicts
-          if(getFirstConflictingInstruction(currentInstruction, instructions) == NULL){
-            schedTime[currentInstruction] = t;
+          // If no conflicts on the resources
+          if(getFirstConflictingInstruction(currentInstruction, t) == NULL){
+            // Schedule the current instruction
+            schedule(currentInstruction, &schedTime, t, delta);
           }
         }
       }
 
-      // If h not scheduled, schedule it
+      // If h not scheduled
       if(schedTime[currentInstruction] == -1){
-        schedTime[currentInstruction] = std::max(tMin, 1 + lastTime[currentInstruction]);
+
+        // Schedule like there's no tomorrow!!
+        schedule(currentInstruction, &schedTime, std::max(tMin, 1 + lastTime[currentInstruction]), delta);
       }
+
+      // Update lastTime
       lastTime[currentInstruction] = schedTime[currentInstruction];
 
+      // Find all the successors, using llvm::Value methods (intra-loop body)
       std::set<llvm::Instruction *> successors = findSuccessors(currentInstruction);
 
       // if successor of h is execute before the end of h, then unschedule it
@@ -221,17 +231,19 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(Architecture* ar
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
           if(schedTime[currentS] != -1){
             if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions) > schedTime[currentS])
-              schedTime[currentS] = -1;
+              unschedule(currentInstruction, &schedTime);
           }
         }
       }
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
-      for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions); 
+      /* ALREADY DONE IN SCHEDULE(...)
+      for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, schedTime[currentInstruction]); 
           conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
-          conflictingInstruction = getFirstConflictingInstruction(currentInstruction, instructions)){
+          conflictingInstruction = getFirstConflictingInstruction(currentInstruction, t)){
         schedTime[conflictingInstruction] = -1;
       }
+      */
     }
 
     // If all instructions are scheduled
@@ -380,7 +392,7 @@ int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instr
         if(llvm::StringRef("phi").equals(definerI->getOpcodeName()))
           currentOffset = findDefRecursive(instructionsMap, definerI, offset);      // Find definers recursively, without incrementing the offset (ignore "phi" functions)     
         else
-          currentOffset = findDefRecursive(instructionsMap, definerI, offset + 1);  // Find definers recursively, incrementing the offset    
+          currentOffset = findDefRecursive(instructionsMap, definerI, offset + architecture->getCycle(currentI->getOpcodeName()));  // Find definers recursively, incrementing the offset    
       }else{
         currentOffset = offset + 1;
       }
@@ -535,9 +547,10 @@ bool ModuloScheduling::resourcesConflict(std::vector<std::string> a, std::vector
   return false;
 }
 
-llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, std::vector<llvm::Instruction *> instructions) {
+llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t) {
   /* Find resource conflicts
   */
+  /*
   bool flag = false;
   std::vector<std::string> unitsCurrent = architecture->getUnit(currentInstruction->getOpcodeName());
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
@@ -551,6 +564,7 @@ llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instru
     if (*instr == currentInstruction)
       flag = true;
   }
+  */
   return NULL;
 }
 
@@ -564,9 +578,24 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
   return true;
 }
 
-bool ModuloScheduling::schedule(llvm::Instruction *instr, std::vector<llvm::Instruction *> *schedTime, int t) {
+void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta) {
+  
+  while(getFirstConflictingInstruction(currentI, t) != NULL){
+    unschedule(currentI, schedTime);
+  }
 
+  // in schedTime, metti t (NON t mod delta)
+  (*schedTime)[currentI] = t;
+  // update architect...
 }
+
+
+
+void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime){
+  (*schedTime)[currentI] = -1;
+  // update architect...
+}
+
 
 void ModuloScheduling::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
   AU.addRequired<FileParser>();

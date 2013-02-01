@@ -59,11 +59,11 @@ namespace cot {
     int instructionsCount;
     std::vector<const char *> opCode;
 
-    // The schedule method implements the Modulo Scheduling algorithm as it's described in: 
+    // The doScheduling method implements the Modulo Scheduling algorithm as it's described in: 
     // "Modern Compiler Implementation in Java", 
     // chapter: "Pipelining and Scheduling",
     // author: Andrew W. Appel
-    virtual std::vector<llvm::Instruction *> schedule(Architecture* architecture, std::vector<llvm::Instruction *> instructions);
+    virtual std::vector<llvm::Instruction *> doScheduling(std::vector<llvm::Instruction *> instructions);
 
     virtual int resourcesBoundEstimator();
 
@@ -90,7 +90,10 @@ namespace cot {
 
     virtual void createNewBlock(llvm::BasicBlock *, std::vector<llvm::Instruction *>);
 
-    virtual bool schedule(llvm::Instruction *, std::vector<llvm::Instruction *> *, int);
+    virtual void schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta);
+
+    virtual void unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime);
+
 
   };
 

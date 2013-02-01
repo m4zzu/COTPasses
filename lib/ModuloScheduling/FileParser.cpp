@@ -51,7 +51,7 @@ void FileParser::initializePass() {
         ++i;
         cells = cells.second.split(',');
       }
-      architecture->addInstruction(instr, u, c);
+      architecture->addOperand(instr, u, c);
     }
     rows = rows.second.split('\n');
   }
