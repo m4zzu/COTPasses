@@ -557,23 +557,19 @@ bool ModuloScheduling::resourcesConflict(std::vector<std::string> a, std::vector
 }
 
 llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t) {
-  /* Find resource conflicts
-  */
-  /*
-  bool flag = false;
-  std::vector<std::string> unitsCurrent = architecture->getUnit(currentInstruction->getOpcodeName());
-  for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
-                                                  instr != instructions.end();
-                                                  ++instr) {
-    if (flag) {
-      std::vector<std::string> units = architecture->getUnit((*instr)->getOpcodeName());
-      if (resourcesConflict(unitsCurrent, units))
-        return *instr;
+  /* Find resource conflicts */
+
+  std::vector<std::string> units = architecture->getUnit(currentInstruction->getOpcodeName());
+  for (std::vector<std::string>::iterator unit = units.begin();
+                                          unit != units.end();
+                                          ++unit) {
+    if (resourceTable.find(*unit) != resourceTable.end()) {
+      if (resourceTable[*unit].size() < (u_int)t && (u_int)t > 0) {
+        if (resourceTable[*unit][t] != NULL)
+          return resourceTable[*unit][t];
+      }
     }
-    if (*instr == currentInstruction)
-      flag = true;
   }
-  */
   return NULL;
 }
 
