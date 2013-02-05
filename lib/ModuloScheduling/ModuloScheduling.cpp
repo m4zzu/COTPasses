@@ -203,7 +203,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
           // If the predecessor is scheduled
           if(schedTime[currentP] != -1){
-            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions);
+            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions, delta);
             tMin = std::max(tMin, currentSchedTime);
           }
         }
@@ -241,12 +241,15 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
                                                    ++firstS){
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
           if(schedTime[currentS] != -1){
-            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions) > schedTime[currentS])
+            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions, delta) > schedTime[currentS])
               unschedule(currentInstruction, &schedTime);
           }
         }
       }
       
+
+      std::vector<llvm::Instruction *> v;
+      return v;
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
       /* ALREADY DONE IN SCHEDULE(...)
@@ -540,10 +543,31 @@ std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(llvm::Instruction
   return succ;
 }
 
-int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions){
-  /* CHECK THE APPEL BOOK!
-  */
-  return 2;
+int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta){
+  int delay = 0;
+  int latency = architecture->getCycle(secondInstruction->getOpcodeName());
+  int k = 0;
+
+  for (llvm::User::op_iterator use = secondInstruction->op_begin();
+                               use != secondInstruction->op_end();
+                               ++use) {
+    if(llvm::Instruction *useInstruction = llvm::dyn_cast<llvm::Instruction>(*use)) {
+      if (useInstruction == firstInstruction) {
+        for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
+                                                        instr != instructions.end();
+                                                        ++instr) {
+          if (*instr == secondInstruction) {
+            k = 1;
+            break;
+          }
+          if (*instr == firstInstruction)
+            break;
+        }
+      }
+    }
+  }
+  delay = latency - k * delta;
+  return delay;
 }
 
 bool ModuloScheduling::resourcesConflict(std::vector<std::string> a, std::vector<std::string> b) {

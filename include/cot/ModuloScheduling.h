@@ -80,7 +80,7 @@ namespace cot {
 
     virtual std::set<llvm::Instruction *> findSuccessors(llvm::Instruction * currentI);
 
-    virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions);
+    virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta);
 
     virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t);
     virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
