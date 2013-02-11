@@ -158,13 +158,12 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(instructions), dataDependenceBoundEstimator());
-
-  /* CURRENT STATUS OF TESTING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+  int deltaMin = std::max(resourcesBoundEstimator(instructions), dataDependenceBoundEstimator(instructions));
 
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
+
+  /* CURRENT STATUS OF TESTING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Infinite loop: we have no upper bound for delta
   for(delta = deltaMin; ; ++delta){
@@ -297,7 +296,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
   std::map<std::string, int> instructionsMap;
-  int delta = 0, deltaTemp = 0, numCicliIstr = 0;
+  int finalBound = 0, tempBound = 0, numCicliIstr = 0;
 
   // Add all the operand available on the architecture in the new local map
   for (std::vector<std::string>::iterator op = operands.begin();
@@ -311,7 +310,6 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
                                                   istr != instructions.end();
                                                   ++istr) {
     std::string op = (*istr)->getOpcodeName();
-
 
     if (instructionsMap.find(op) != instructionsMap.end())
       ++instructionsMap[op];
@@ -328,63 +326,73 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
     if (it != instructionsMap.end() && numCicliIstr > 0) {
 
       // Estimate the bound of the current operand
-      deltaTemp = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
-      if(deltaTemp > delta)
-        delta = deltaTemp;
+      tempBound = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
+      if(tempBound > finalBound)
+        finalBound = tempBound;
     }
 
     llvm::errs() << record->first << ": " << it->second << " occurrencies\n";
   }
 
-  llvm::errs() << "Lower bound estimation: " << delta << "\n";
+  llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
 
   llvm::errs() << "EXITING: resourcesBoundEstimator --------------------\n";
 
-  return delta;
+  return finalBound;
 }
 
 
-int ModuloScheduling::dataDependenceBoundEstimator() {
+int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction *> instructions) {
+
+  llvm::errs() << "ENTERED IN: dataDependenceBoundEstimator --------------------\n";
+
   // Create a map: {instruction, isVisited}
   // Init isVisited to false
   std::map<llvm::Instruction *, bool> instructionsMap;
-  for(unsigned j = 0; j < scheduledInstructions.size(); ++j) {
-    instructionsMap.insert(std::pair<llvm::Instruction *, int> (scheduledInstructions[j], false));
+  for(unsigned j = 0; j < instructions.size(); ++j) {
+    instructionsMap.insert(std::pair<llvm::Instruction *, int> (instructions[j], false));
   }
 
   int finalBound = 0;
   int tempBound = 0;
 
   // For all the instructions
-  for(unsigned i = 0; i < scheduledInstructions.size(); ++i) {
+  for(unsigned i = 0; i < instructions.size(); ++i) {
 
     tempBound = 0;
 
     // Skip "phi" function: they will not be scheduled on the pipeline
-    if(!llvm::StringRef("phi").equals(scheduledInstructions[i]->getOpcodeName())){
+    if(!llvm::StringRef("phi").equals(instructions[i]->getOpcodeName())){
+
+      llvm::errs() << "----------------------------------------\n";
 
       // Recursively find definitions of the operands of the instruction
-      tempBound = findDefRecursive(instructionsMap, scheduledInstructions[i], 0);
+      tempBound = findDefRecursive(instructionsMap, instructions[i], 0);
     }
 
     if(tempBound > finalBound)
       finalBound = tempBound;
   }
 
+  llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
+
+  llvm::errs() << "EXITING: dataDependenceBoundEstimator --------------------\n";
+
   return finalBound;
 }
 
+
 int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * currentI, int offset) const{
   
-  /*
+  // Print to screen
+  for (int i = 0; i <= offset; ++i)
+    llvm::errs() << "  ";
+  
   if(!llvm::StringRef("phi").equals(currentI->getOpcodeName())){
-    // Print to screen
-    for (int i = 0; i <= offset; ++i)
-      OS << "  ";
-
-    OS << offset << " - " << currentI->getOpcodeName() << "\n";
+    llvm::errs() << offset << " -" << (*currentI) << "\n";
+  }else{
+    llvm::errs() << "PHI -" << (*currentI) << "\n";
   }
-  */
 
   // Set the current instruction as visited
   instructionsMap[currentI] = true;
@@ -393,22 +401,23 @@ int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instr
   int finalOffset = 0;
   int currentOffset = 0;
 
-  // For all the definitions
+  // For all the instruction defining one of the current instruction's operators
   for (llvm::User::op_iterator i = currentI->op_begin(), e = currentI->op_end(); i != e; ++i) {
 
     // Reset the current offset 
     currentOffset = 0;
 
-    // For all the instruction defining one of the current instruction's operators
+    // Dynamic cast
     if(llvm::Instruction * definerI = llvm::dyn_cast<llvm::Instruction>(*i)){
           
       // If the definer instruction hasn't been visited
       if(instructionsMap[definerI] == false){
 
-        if(llvm::StringRef("phi").equals(definerI->getOpcodeName()))
-          currentOffset = findDefRecursive(instructionsMap, definerI, offset);      // Find definers recursively, without incrementing the offset (ignore "phi" functions)     
-        else
-          currentOffset = findDefRecursive(instructionsMap, definerI, offset + architecture->getCycle(currentI->getOpcodeName()));  // Find definers recursively, incrementing the offset    
+        if(llvm::StringRef("phi").equals(definerI->getOpcodeName())){
+          currentOffset = findDefRecursive(instructionsMap, definerI, offset);      // Find definers recursively, without incrementing the offset (ignore "phi" functions)
+        }else{
+          currentOffset = findDefRecursive(instructionsMap, definerI, offset + 1);  // Find definers recursively, incrementing the offset    
+        }
       }else{
         currentOffset = offset + 1;
       }
@@ -425,7 +434,12 @@ int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instr
 
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
+  llvm::errs() << "ENTERED IN: prioritizeInstructions --------------------\n";
+
   // No heuristic has been implemented to sort the instructions. 
+
+  llvm::errs() << "EXITING: prioritizeInstructions --------------------\n";
+
   return instructions;
 }
 

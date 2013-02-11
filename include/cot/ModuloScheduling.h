@@ -66,13 +66,20 @@ namespace cot {
     // author: Andrew W. Appel
     virtual std::vector<llvm::Instruction *> doScheduling(std::vector<llvm::Instruction *> instructions);
 
+    // The following method is meant to estimate a lower bound for delta, 
+    // considering the number of functional units and the operations in the loop body
     virtual int resourcesBoundEstimator(std::vector<llvm::Instruction *> instructions);
 
-    virtual int dataDependenceBoundEstimator();
+    // The following method is meant to estimate a lower bound for delta,
+    // finding the longest cycle in the data-dependence graph 
+    virtual int dataDependenceBoundEstimator(std::vector<llvm::Instruction *> instructions);
 
+    // This is an auxiliary method, used by the previous to recursively traverse the tree of dependencies
     virtual int findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
     
+    // This method is used to sort the instructions using a particular criterion
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
+
 
     virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
 
@@ -94,7 +101,6 @@ namespace cot {
     virtual void schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta);
 
     virtual void unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime);
-
 
   };
 
