@@ -80,7 +80,7 @@ namespace cot {
     // This method is used to sort the instructions using a particular criterion
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
 
-
+    // The following method is used to get the unscheduled instruction with the higher priority
     virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
 
     virtual std::set<llvm::Instruction *> findPredecessors(llvm::Instruction * currentI);

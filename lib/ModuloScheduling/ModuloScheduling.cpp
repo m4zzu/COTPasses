@@ -163,11 +163,12 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
   // Order instructions by a priority
   instructions = prioritizeInstructions(instructions);
 
-  /* CURRENT STATUS OF TESTING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
   // Infinite loop: we have no upper bound for delta
   for(delta = deltaMin; ; ++delta){
-    int budget = instructions.size() * 3;           // Init the number of attempts
+
+    int budget = instructions.size() * 3;                // Init the number of attempts
+
+    // Init the resource table
     for (std::map<std::string, std::vector<llvm::Instruction *> >::iterator it = resourceTable.begin();
                                                               it != resourceTable.end();
                                                               ++it) {
@@ -181,14 +182,15 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       schedTime.insert(std::pair<llvm::Instruction *, int> (instructions[i], -1));
     }
 
-    llvm::Instruction* currentInstruction = NULL;
-
+    llvm::errs() << "\nSCHEDULING LOOP - delta = " << delta << ", budget = " << budget << " ---------------------------------\n";
     // While we have attempts and some instructions are not scheduled, 
     // try to schedule them, decrementing the budget of attempts at every iteration
-    for(currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime);
+    for(llvm::Instruction* currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime);
         budget > 0 && currentInstruction != NULL;
         currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--){
-      
+
+      llvm::errs() << "Current instruction: " << (*currentInstruction) << "\n";
+
       // Find all the predecessors, using llvm::User methods (intra-loop body)
       std::set<llvm::Instruction *> predecessors = findPredecessors(currentInstruction);
       int tMin = 0;
@@ -259,7 +261,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       }
       */
 
-      /*
+      
     }
 
 
@@ -284,14 +286,14 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       return scheduledInstructions;
     }
   }
-  */
+  
   return scheduledInstructions;
 }
 
 
 int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> instructions) {
 
-  llvm::errs() << "ENTERED IN: resourcesBoundEstimator --------------------\n";
+  llvm::errs() << "ENTERED IN: resourcesBoundEstimator -------------------------------------------\n";
 
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
@@ -336,7 +338,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
 
   llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
 
-  llvm::errs() << "EXITING: resourcesBoundEstimator --------------------\n";
+  llvm::errs() << "EXITING: resourcesBoundEstimator ----------------------------------------------\n";
 
   return finalBound;
 }
@@ -344,7 +346,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
 
 int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction *> instructions) {
 
-  llvm::errs() << "ENTERED IN: dataDependenceBoundEstimator --------------------\n";
+  llvm::errs() << "ENTERED IN: dataDependenceBoundEstimator -----------------------------------------\n";
 
   // Create a map: {instruction, isVisited}
   // Init isVisited to false
@@ -364,7 +366,7 @@ int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction
     // Skip "phi" function: they will not be scheduled on the pipeline
     if(!llvm::StringRef("phi").equals(instructions[i]->getOpcodeName())){
 
-      llvm::errs() << "----------------------------------------\n";
+      llvm::errs() << "-------------------------------------------------------------\n";
 
       // Recursively find definitions of the operands of the instruction
       tempBound = findDefRecursive(instructionsMap, instructions[i], 0);
@@ -376,7 +378,7 @@ int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction
 
   llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
 
-  llvm::errs() << "EXITING: dataDependenceBoundEstimator --------------------\n";
+  llvm::errs() << "EXITING: dataDependenceBoundEstimator -----------------------------------------\n";
 
   return finalBound;
 }
@@ -434,22 +436,24 @@ int ModuloScheduling::findDefRecursive(std::map<llvm::Instruction *, bool> instr
 
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
-  llvm::errs() << "ENTERED IN: prioritizeInstructions --------------------\n";
-
+  llvm::errs() << "ENTERED IN: prioritizeInstructions --------------------------------------------\n";
+  llvm::errs() << "No heuristic has been implemented to sort the instructions\n";
+  llvm::errs() << "EXITING: prioritizeInstructions -----------------------------------------------\n";
+  
   // No heuristic has been implemented to sort the instructions. 
-
-  llvm::errs() << "EXITING: prioritizeInstructions --------------------\n";
-
   return instructions;
 }
 
 llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime){
-
+llvm::errs() << "ENTERED IN: findHighPriorityUnscheduledInstruction --------------------------------------------\n";
   for (unsigned i = 0; i < instructions.size(); ++i) {
     llvm::Instruction* currentInstr = instructions[i];
-    if(schedTime[currentInstr] == -1)
+    if(schedTime[currentInstr] == -1){
+      llvm::errs() << "EXITING: findHighPriorityUnscheduledInstruction -----------------------------------------------\n";
       return currentInstr;           // Unscheduled instruction found
+    }
   }
+  llvm::errs() << "EXITING: findHighPriorityUnscheduledInstruction -----------------------------------------------\n";
 
   return NULL;                       // NO unscheduled instruction found
 }
