@@ -83,14 +83,15 @@ namespace cot {
     // The following method is used to get the unscheduled instruction with the higher priority
     virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
 
-    virtual std::set<llvm::Instruction *> findPredecessors(llvm::Instruction * currentI);
+    virtual std::set<llvm::Instruction *> findPredecessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI);
 
-    virtual std::set<llvm::Instruction *> findSuccessors(llvm::Instruction * currentI);
+    virtual std::set<llvm::Instruction *> findSuccessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI);
 
     virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta);
 
-    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t);
-    virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
+    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit);
+    virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t);
+    // virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
 
     virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
 
