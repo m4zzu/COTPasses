@@ -50,7 +50,6 @@ namespace cot {
   private:
     // This is the information computed by the analysis.
     // REAL VARS
-    int delta;
     std::vector<llvm::Instruction *> scheduledInstructions;
     Architecture *architecture;
     std::map<std::string, std::vector<llvm::Instruction *> > resourceTable;
@@ -89,8 +88,8 @@ namespace cot {
 
     virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta);
 
-    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit);
-    virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t);
+    virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit, int delta);
+    virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t, int delta);
     // virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
 
     virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
@@ -102,6 +101,8 @@ namespace cot {
     virtual void schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta);
 
     virtual void unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime);
+
+    virtual void printResourceTable();
 
   };
 
