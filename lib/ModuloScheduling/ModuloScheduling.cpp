@@ -219,14 +219,14 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
           // If the predecessor is scheduled
           if(schedTime[currentP] != -1){
-            llvm::errs() << "==> Scheduled predecessor found\n"
+            llvm::errs() << "==> Scheduled predecessor found\n";
             int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions, delta);
             tMin = std::max(tMin, currentSchedTime);
           }
         }
       }
 
-      llvm::errs() << "Try to schedule: " << (*currentInstruction) <<" between" << tmin << " and " << tMin + delta - 1 <<"\n";
+      llvm::errs() << "Try to schedule: " << (*currentInstruction) << " between" << tMin << " and " << tMin + delta - 1 << "\n";
       // Try to schedule h between tMin and tMin + delta - 1
        for(int t = tMin; t < tMin + delta - 1; ++t){
         if(schedTime[currentInstruction] == -1){
