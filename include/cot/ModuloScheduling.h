@@ -74,7 +74,7 @@ namespace cot {
     virtual int dataDependenceBoundEstimator(std::vector<llvm::Instruction *> instructions);
 
     // This is an auxiliary method, used by the previous to recursively traverse the tree of dependencies
-    virtual int findDefRecursive(std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
+    virtual int findDefRecursive(llvm::Instruction * startingI, std::map<llvm::Instruction *, bool> instructionsMap, llvm::Instruction * istr, int offset) const;
     
     // This method is used to sort the instructions using a particular criterion
     virtual std::vector<llvm::Instruction *> prioritizeInstructions(std::vector<llvm::Instruction *> instructions);
