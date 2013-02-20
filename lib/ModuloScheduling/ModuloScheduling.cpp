@@ -624,9 +624,10 @@ void ModuloScheduling::printResourceTable() {
       done.push_back(op->getUnit());
       llvm::errs() << op->getUnit() <<"\t";
       for (int i = 0; i < tot; ++i)
-        if (resourceTable[op->getUnit()][i] != NULL)
-          llvm::errs() << resourceTable[op->getUnit()][i]->getOpcodeName() << "\t";
-        else 
+        if (resourceTable[op->getUnit()][i] != NULL){
+          llvm::Instruction * currentI = resourceTable[op->getUnit()][i];
+          llvm::errs() << (*currentI) << "\t";
+        }else 
           llvm::errs() << "nop\t";
       llvm::errs() << "\n";
     }
