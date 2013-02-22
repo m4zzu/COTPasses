@@ -23,6 +23,7 @@ InstructionCount *CreateFileParserPass();
 llvm::Pass *CreateHelloLLVMPass();
 llvm::Pass *CreateFunctionEraserPass();
 llvm::LoopPass *CreateModuloSchedulingPass();
+llvm::Pass *CreateModSchedPass();
 
 } // End namespace cot.
 
@@ -37,6 +38,7 @@ void initializeFileParserPass(PassRegistry &Registry);
 
 // Transformations.
 void initializeHelloLLVMPass(PassRegistry &Registry);
+void initializeModSchedPass(PassRegistry &Registry);
 void initializeFunctionEraserPass(PassRegistry &Registry);
 void initializeModuloSchedulingPass(PassRegistry &Registry);
 

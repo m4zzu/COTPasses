@@ -9,5 +9,4 @@ LEVEL = ..
 # List all of the subdirectories that we will compile.
 #
 DIRS = InstructionCount HelloLLVM FunctionEraser ModuloScheduling
-
 include $(LEVEL)/Makefile.common
