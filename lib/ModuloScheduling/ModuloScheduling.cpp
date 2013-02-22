@@ -46,11 +46,9 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   if(depth > 1)
     return false;     // Program not modified
 
-  // Init all the vars ---
-  // REAL VARS
+  // Init all the vars
   FileParser &fp = getAnalysis<FileParser>();
   architecture = fp.getArchitecture();
-  std::vector<llvm::Instruction *> instructions;
   std::vector<Operand> ops = architecture->getAllArch();
   for (std::vector<Operand>::iterator op = ops.begin();
                                       op != ops.end();
@@ -75,23 +73,30 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop> LIB = llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop>();
     LIB.changeLoopFor(currentBlock, L);
     if (!LIB.isLoopHeader(currentBlock)) {
-    // Extract the instructions from the basic block
+
+      std::vector<llvm::Instruction *> instructions;
+      // Extract the instructions from the basic block
       for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
                                      end = *currentBlock->end(); 
                                      istr != end; 
                                      ++istr) {
           instructions.push_back(istr);
       }
+
+      // Apply the algorithm
+      instructions = doScheduling(instructions);
     }
   }
 
   // Apply the algorithm
-  instructions = doScheduling(instructions);
+  // instructions = doScheduling(instructions);
+
+
   // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
   // deleteOldBlock();
 
   // Set the global variable, so it's accessible by the print method 
-  scheduledInstructions = instructions;
+  // scheduledInstructions = instructions;
 
   return true;   // Program modified
 }
@@ -146,6 +151,12 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
 
 std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> instructions){
 
+  llvm::errs() << "\n\n";
+  llvm::errs() << "################################################################################\n";
+  llvm::errs() << "####################            MODULO SCHEDULING           ####################\n";
+  llvm::errs() << "################################################################################";
+  llvm::errs() << "\n\n";
+
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
   std::map<llvm::Instruction *, int> schedTime;
@@ -165,11 +176,15 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
     for (std::map<std::string, std::vector<llvm::Instruction *> >::iterator it = resourceTable.begin();
                                                               it != resourceTable.end();
                                                               ++it) {
+      for (u_int i = 0; i < it->second.size(); ++i)
+        resourceTable[it->first][i] = NULL;
       for (int i = it->second.size(); i < delta; ++i)
         resourceTable[it->first].push_back(NULL);
     }
 
     // Init the data structures
+    lastTime.clear();
+    schedTime.clear();
     for(unsigned i = 0; i < instructions.size(); ++i){
       lastTime.insert(std::pair<llvm::Instruction *, int> (instructions[i], 0));
       schedTime.insert(std::pair<llvm::Instruction *, int> (instructions[i], -1));
@@ -606,6 +621,35 @@ void ModuloScheduling::printResourceTable() {
   int tot = resourceTable[ops[0].getUnit()].size();
   std::vector<std::string> done;
   llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
+
+  // VERTICAL RAPRESENTATION
+
+  for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
+    if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
+      llvm::errs() << op->getUnit() << "\t\t || \t\t";
+      done.push_back(op->getUnit());
+    }
+  }
+  llvm::errs() << "\n";
+
+  // For all the rows
+  for (int i = 0; i < tot; ++i){
+    llvm::errs() << i << "\t\t || ";
+
+    for (std::vector<std::string>::iterator it = done.begin(); it != done.end(); ++it){
+      if(resourceTable[*it][i] != NULL)
+        llvm::errs() << (*resourceTable[*it][i]) << "\t\t || ";
+      else
+        llvm::errs() << "nop" << "\t\t || ";
+    }
+
+    llvm::errs() << "\n";
+  }
+  llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
+
+  done.clear();
+  // HORIZONTAL RAPRESENTATION
+  llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
   llvm::errs() << "\t";
   for (int i = 0; i < tot; ++i)
     llvm::errs() << "  " << (i) << "  \t";
@@ -617,12 +661,14 @@ void ModuloScheduling::printResourceTable() {
       for (int i = 0; i < tot; ++i)
         if (resourceTable[op->getUnit()][i] != NULL){
           llvm::Instruction * currentI = resourceTable[op->getUnit()][i];
-          llvm::errs() << (*currentI) << "\t";
+          llvm::errs() << currentI->getOpcodeName() << "\t";
         }else 
           llvm::errs() << "nop\t";
       llvm::errs() << "\n";
     }
   }
+  
+  
   llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
 }
 
@@ -676,8 +722,9 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
   for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
           iter != schedTime.end(); 
           ++iter){
+
         if(iter->second == -1){
-          llvm::errs() << "At least one instruction has not been scheduled\n";
+          llvm::errs() << "At least one instruction has not been scheduled: " << (*(iter->first)) << "\n";
           llvm::errs() << "EXITING: scheduleCompleted -----------------------------------------------\n";
           return false;
         }

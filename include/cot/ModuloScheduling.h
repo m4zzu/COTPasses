@@ -49,7 +49,6 @@ namespace cot {
 
   private:
     // This is the information computed by the analysis.
-    // REAL VARS
     std::vector<llvm::Instruction *> scheduledInstructions;
     Architecture *architecture;
     std::map<std::string, std::vector<llvm::Instruction *> > resourceTable;
