@@ -65,7 +65,9 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // lavora sull'unico BB: chiama funzione schedule()
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
-
+  // FOR DIFFERENT BLOCKS 
+  std::vector<llvm::Instruction *> instructions;
+  
   for(unsigned i = 0; i < blocks.size(); ++i) {
 
     llvm::BasicBlock *currentBlock = blocks[i];
@@ -74,7 +76,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     LIB.changeLoopFor(currentBlock, L);
     if (!LIB.isLoopHeader(currentBlock)) {
 
-      std::vector<llvm::Instruction *> instructions;
+      // FOR DIFFERENT BLOCKS: std::vector<llvm::Instruction *> instructions;
+
       // Extract the instructions from the basic block
       for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
                                      end = *currentBlock->end(); 
@@ -83,13 +86,13 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
           instructions.push_back(istr);
       }
 
-      // Apply the algorithm
-      instructions = doScheduling(instructions);
+      // FOR DIFFERENT BLOCKS: Apply the algorithm
+      // FOR DIFFERENT BLOCKS: instructions = doScheduling(instructions);
     }
   }
 
-  // Apply the algorithm
-  // instructions = doScheduling(instructions);
+  // FOR SINGLE BLOCK: Apply the algorithm
+  instructions = doScheduling(instructions);
 
 
   // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
