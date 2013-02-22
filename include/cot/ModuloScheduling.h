@@ -54,11 +54,6 @@ namespace cot {
     Architecture *architecture;
     std::map<std::string, std::vector<llvm::Instruction *> > resourceTable;
 
-    // TEMP VARS
-    int blocksCount;
-    int instructionsCount;
-    std::vector<const char *> opCode;
-
     // The doScheduling method implements the Modulo Scheduling algorithm as it's described in: 
     // "Modern Compiler Implementation in Java", 
     // chapter: "Pipelining and Scheduling",

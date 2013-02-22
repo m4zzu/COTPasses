@@ -62,10 +62,6 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     }
   }
 
-  // TEMP VARS
-  blocksCount = 0;
-  instructionsCount = 0;
-
   // loopBody: dev'essere un unico BB
   // scarta la induction variable: splitta in due il BB  e lasciala fuori
 
@@ -73,7 +69,6 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
 
   for(unsigned i = 0; i < blocks.size(); ++i) {
-    blocksCount += 1;
 
     llvm::BasicBlock *currentBlock = blocks[i];
 
@@ -85,7 +80,6 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
                                      end = *currentBlock->end(); 
                                      istr != end; 
                                      ++istr) {
-          instructionsCount += 1;
           instructions.push_back(istr);
       }
     }
@@ -137,9 +131,6 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
                              const llvm::Module *Mod) const {
   if(!Mod)
     return;
-
-  OS << "blocks count: " << blocksCount << "\n";
-  OS << "instructions count: " << instructionsCount << "\n";
 
   OS << "=======-------=======\n";
   std::vector<Operand> A = architecture->getAllArch();
