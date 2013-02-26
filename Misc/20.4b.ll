@@ -10,20 +10,25 @@ define i32 @main() nounwind uwtable {
   %d = alloca i32, align 4
   %e = alloca i32, align 4
   %f = alloca i32, align 4
-  %j = alloca i32, align 4
+  %g = alloca i32, align 4
+  %h = alloca i32, align 4
   %i = alloca i32, align 4
+  %j = alloca i32, align 4
+  %i1 = alloca i32, align 4
   store i32 0, i32* %1
   store i32 0, i32* %j, align 4
   store i32 1, i32* %b, align 4
   store i32 2, i32* %f, align 4
   store i32 3, i32* %e, align 4
-  store i32 1, i32* %i, align 4
+  store i32 4, i32* %g, align 4
+  store i32 5, i32* %h, align 4
+  store i32 1, i32* %i1, align 4
   br label %2
 
-; <label>:2                                       ; preds = %25, %0
-  %3 = load i32* %i, align 4
-  %4 = icmp slt i32 %3, 5
-  br i1 %4, label %5, label %28
+; <label>:2                                       ; preds = %31, %0
+  %3 = load i32* %i1, align 4
+  %4 = icmp slt i32 %3, 10
+  br i1 %4, label %5, label %34
 
 ; <label>:5                                       ; preds = %2
   %6 = load i32* %j, align 4
@@ -46,20 +51,28 @@ define i32 @main() nounwind uwtable {
   %19 = load i32* %d, align 4
   %20 = add nsw i32 %18, %19
   store i32 %20, i32* %e, align 4
-  %21 = load i32* %i, align 4
+  %21 = load i32* %i1, align 4
   %22 = sdiv i32 %21, 2
   store i32 %22, i32* %f, align 4
-  %23 = load i32* %i, align 4
-  %24 = mul nsw i32 %23, 4
-  store i32 %24, i32* %j, align 4
-  br label %25
+  %23 = load i32* %b, align 4
+  %24 = load i32* %i1, align 4
+  %25 = mul nsw i32 %23, %24
+  store i32 %25, i32* %g, align 4
+  %26 = load i32* %d, align 4
+  %27 = load i32* %i1, align 4
+  %28 = mul nsw i32 %26, %27
+  store i32 %28, i32* %h, align 4
+  %29 = load i32* %i1, align 4
+  %30 = sdiv i32 %29, 3
+  store i32 %30, i32* %j, align 4
+  br label %31
 
-; <label>:25                                      ; preds = %5
-  %26 = load i32* %i, align 4
-  %27 = add nsw i32 %26, 1
-  store i32 %27, i32* %i, align 4
+; <label>:31                                      ; preds = %5
+  %32 = load i32* %i1, align 4
+  %33 = add nsw i32 %32, 1
+  store i32 %33, i32* %i1, align 4
   br label %2
 
-; <label>:28                                      ; preds = %2
+; <label>:34                                      ; preds = %2
   ret i32 0
 }

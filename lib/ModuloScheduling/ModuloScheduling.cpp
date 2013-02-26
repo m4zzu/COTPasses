@@ -46,10 +46,12 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
   if(depth > 1)
     return false;     // Program not modified
 
-  // Init all the vars
+  // Init the architecture
   FileParser &fp = getAnalysis<FileParser>();
   architecture = fp.getArchitecture();
-  std::vector<Operand> ops = architecture->getAllArch();
+
+  // Init the resource table
+  std::vector<Operand> ops = architecture->getAllArch(); 
   for (std::vector<Operand>::iterator op = ops.begin();
                                       op != ops.end();
                                       ++op) {
@@ -60,14 +62,13 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     }
   }
 
-  // loopBody: dev'essere un unico BB
-  // scarta la induction variable: splitta in due il BB  e lasciala fuori
-
-  // lavora sull'unico BB: chiama funzione schedule()
+  // Retrieve blocks
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
-  // FOR DIFFERENT BLOCKS 
-  std::vector<llvm::Instruction *> instructions;
+
+  // Init here the instructions list, if you want to consider the induction variable in the loop body
+  // std::vector<llvm::Instruction *> instructions;
   
+  // For every block
   for(unsigned i = 0; i < blocks.size(); ++i) {
 
     llvm::BasicBlock *currentBlock = blocks[i];
@@ -76,7 +77,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     LIB.changeLoopFor(currentBlock, L);
     if (!LIB.isLoopHeader(currentBlock)) {
 
-      // FOR DIFFERENT BLOCKS: std::vector<llvm::Instruction *> instructions;
+       // Init here the instructions list, if you DON'T want to consider the induction variable in the loop body
+      std::vector<llvm::Instruction *> instructions;
 
       // Extract the instructions from the basic block
       for(llvm::BasicBlock::iterator istr = *currentBlock->begin(), 
@@ -86,24 +88,29 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
           instructions.push_back(istr);
       }
 
-      // FOR DIFFERENT BLOCKS: Apply the algorithm
-      // FOR DIFFERENT BLOCKS: instructions = doScheduling(instructions);
+      // Apply the algorithm here, if you DON'T want to consider the induction variable in the loop body
+      instructions = doScheduling(instructions);
     }
   }
 
-  // FOR SINGLE BLOCK: Apply the algorithm
-  instructions = doScheduling(instructions);
+  // Apply the algorithm here, if you want to consider the induction variable in the loop body
+  // instructions = doScheduling(instructions);
 
 
+  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
   // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
   // deleteOldBlock();
 
   // Set the global variable, so it's accessible by the print method 
   // scheduledInstructions = instructions;
+  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
 
   return true;   // Program modified
 }
 
+
+
+// REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
 void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
 {
   // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
@@ -130,6 +137,9 @@ void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::In
   //     // CB->getInstList()
   // }
 }
+// REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 bool ModuloScheduling::doFinalization(){
   return false;   // Program not modified
@@ -140,6 +150,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   if(!Mod)
     return;
 
+  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
   OS << "=======-------=======\n";
   std::vector<Operand> A = architecture->getAllArch();
   unsigned i = 0;
@@ -150,7 +161,9 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
     OS << "\tCycle:\t" << A[i].getCycle() << "\n";
     ++i;
   }
+  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
 }
+
 
 std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> instructions){
 
@@ -246,6 +259,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
             llvm::errs() << " scheduled at time " << t << "\n";
             printResourceTable();
+
+
           }
         }
       }
@@ -337,7 +352,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
   std::map<std::string, int> instructionsMap;
-  int finalBound = 0, tempBound = 0, numCicliIstr = 0;
+  int finalBound = 0, tempBound = 0, numOfCycles = 0;
 
   // Add all the operand available on the architecture in the new local map
   for (std::vector<std::string>::iterator op = operands.begin();
@@ -362,21 +377,69 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
   for (std::map<std::string, int>::iterator record = instructionsMap.begin();
                                             record != instructionsMap.end();
                                             ++record) {
-    numCicliIstr = architecture->getCycle(record->first);
+    numOfCycles = architecture->getCycle(record->first);
     std::map<std::string, int>::iterator it = instructionsMap.find(record->first);
-    if (it != instructionsMap.end() && numCicliIstr > 0) {
+    if (it != instructionsMap.end() && numOfCycles > 0) {
 
       // Estimate the bound of the current operand
-      tempBound = ceil(numCicliIstr * it->second / architecture->getNumberOfUnits(record->first));
+      tempBound = ceil(numOfCycles * it->second / architecture->getNumberOfUnits(record->first));
 
-      llvm::errs() << record->first << ": " << numCicliIstr << "*" << it->second << "/" << architecture->getNumberOfUnits(record->first) << " = " << tempBound << "\n";
+      llvm::errs() << record->first << ": " << numOfCycles << "*" << it->second << "/" << architecture->getNumberOfUnits(record->first) << " = " << tempBound << "\n";
 
       finalBound = std::max(tempBound, finalBound);
     }
-
-    // llvm::errs() << record->first << ": " << it->second << " occurrencies\n";
-
   }
+/*
+  std::map<std::string, int> instructionsPerUnit;
+  std::map<std::string, int> maxCyclesPerUnit;
+
+  int finalBound = 0, tempBound = 0, cycles = 0;
+  std::vector<int> v = [0 ,0 ];
+
+
+  // For all the instructions to be scheduled
+  for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
+                                                  istr != instructions.end();
+                                                  ++istr) {
+
+    // Get suitable units
+    std::vector<std::string> suitableUnits = architecture->getUnit((*istr)->getOpcodeName());
+
+    // For every suitable unit
+    for (std::vector<std::string>::iterator unit = suitableUnits.begin(); 
+                                            unit != suitableUnits.end(); 
+                                            ++unit){
+
+      // Add the unit to the list of available units (if not present)
+      if (instructionsPerUnit.find(*unit) == instructionsPerUnit.end()){
+        instructionsPerUnit.insert(std::pair<std::string, int>(*unit, 0));
+        maxCyclesPerUnit.insert(std::pair<std::string, int>(*unit, 0));
+      }
+
+      // Increment the instructions count for that unit
+      ++instructionsPerUnit[*unit];
+
+      // Set the actual max number of cycles found
+      maxCyclesPerUnit[*unit] = std::max(maxCyclesPerUnit[*unit], architecture->getCycle((*istr)->getOpcodeName()));
+    }
+  }
+
+  // For every available unit
+  for (std::map<std::string, int>::iterator unit = instructionsPerUnit.begin();
+                                            unit != instructionsPerUnit.end();
+                                            ++unit) {
+    cycles = maxCyclesPerUnit[*unit];
+    if (cycles > 0) {
+
+      // Estimate the bound of the current operand
+      tempBound = ceil(cycles * unit->second / architecture->getNumberOfUnits(unit->first));    // WTF??
+
+      llvm::errs() << unit->first << ": " << cycles << "*" << it->second << "/" << architecture->getNumberOfUnits(unit->first) << " = " << tempBound << "\n";
+
+      finalBound = std::max(tempBound, finalBound);
+    }
+  }
+  */
 
   llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
 
@@ -485,11 +548,22 @@ int ModuloScheduling::findDefRecursive(llvm::Instruction * startingI, std::map<l
 }
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
-  llvm::errs() << "\nENTERED IN: prioritizeInstructions --------------------------------------------\n";
-  llvm::errs() << "No heuristic has been implemented to sort the instructions\n";
-  llvm::errs() << "EXITING: prioritizeInstructions -----------------------------------------------\n";
-  
-  // No heuristic has been implemented to sort the instructions. 
+
+  // Uncomment these lines to reproduce the priority order of the example
+  if(instructions.size() == 10){
+    std::vector<llvm::Instruction *> prioritizedInstructions;
+    prioritizedInstructions.push_back(instructions[2]);     // c
+    prioritizedInstructions.push_back(instructions[3]);     // d
+    prioritizedInstructions.push_back(instructions[4]);     // e
+    prioritizedInstructions.push_back(instructions[0]);     // a
+    prioritizedInstructions.push_back(instructions[1]);     // b
+    prioritizedInstructions.push_back(instructions[5]);     // f
+    prioritizedInstructions.push_back(instructions[8]);     // j
+    prioritizedInstructions.push_back(instructions[6]);     // g
+    prioritizedInstructions.push_back(instructions[7]);     // h
+    instructions = prioritizedInstructions;
+  }
+
   return instructions;
 }
 

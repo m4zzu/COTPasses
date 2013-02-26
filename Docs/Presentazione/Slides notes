@@ -1,0 +1,221 @@
+APPUNTI PER LE SLIDES ---
+
+From the example from Appel Program 20.4
+
+IMMAGINE 1
+
+
+
+
+Data Dependency Graph:
+Dependencies classification:
+• loop-carried dependencies (dotted edges)
+• dependencies within the same iteration (solid edges)
+
+IMMAGINE 2
+
+NOTE: In this example the iteration distance is always equal to one.
+
+
+
+
+Instruction unrolling:
+
+IMMAGINE 3
+
+NOTE: ignore control variable increment and test
+
+
+
+
+Our code:
+
+COPIA E INCOLLA DEL NUOVO CODICE CON I COMMENTI
+
+For simplicity, we replaced the memory access operations with MUL and DIV operations: the algorithm flow is then preserved.
+
+In order to reproduce the example, the priority specified in the book has been reproduced in our code (see: ModuloScheduling::prioritizeInstructions())
+
+
+
+Architectural information:
+
+COPIA E INCOLLA DEL FILE mips10000.cfg
+
+
+
+
+------- DA CONTINUARE APPENA FINISCO DI SIMULARE L'ESECUZIONE -----
+Output: 
+- Data Dependence Bound Estimator [1]: 3
+
+
+
+
+
+
+REFERENCES ---
+
+[1]
+ENTERED IN: dataDependenceBoundEstimator -----------------------------------------
+-------------------------------------------------------------
+  0 -  %14 = add nsw i32 %i1.0, 1
+  PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+===> LOOP FOUND ON THE DDG - Lenght: 1
+-------------------------------------------------------------
+  0 -  br label %1
+-------------------------------------------------------------
+  0 -  %4 = add nsw i32 %j.0, %b.0
+  PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+    1 -  %12 = sdiv i32 %i1.0, 3
+    PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+      2 -  %14 = add nsw i32 %i1.0, 1
+  PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+    1 -  %5 = add nsw i32 %4, %f.0
+===> LOOP FOUND ON THE DDG - Lenght: 2
+    PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+      2 -  %9 = sdiv i32 %i1.0, 2
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %5 = add nsw i32 %4, %f.0
+    1 -  %4 = add nsw i32 %j.0, %b.0
+    PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+      2 -  %12 = sdiv i32 %i1.0, 3
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+    PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+===> LOOP FOUND ON THE DDG - Lenght: 2
+  PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+    1 -  %9 = sdiv i32 %i1.0, 2
+    PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+      2 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %6 = sub nsw i32 %e.0, %j.0
+  PHI -  %e.0 = phi i32 [ 3, %0 ], [ %8, %13 ]
+    1 -  %8 = add nsw i32 %5, %7
+      2 -  %5 = add nsw i32 %4, %f.0
+        3 -  %4 = add nsw i32 %j.0, %b.0
+        PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+          4 -  %12 = sdiv i32 %i1.0, 3
+          PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+            5 -  %14 = add nsw i32 %i1.0, 1
+        PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+      PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+        3 -  %9 = sdiv i32 %i1.0, 2
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+      2 -  %7 = sub nsw i32 %f.0, %6
+      PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+        3 -  %9 = sdiv i32 %i1.0, 2
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+===> LOOP FOUND ON THE DDG - Lenght: 3
+  PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+    1 -  %12 = sdiv i32 %i1.0, 3
+    PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+      2 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %7 = sub nsw i32 %f.0, %6
+  PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+    1 -  %9 = sdiv i32 %i1.0, 2
+    PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+      2 -  %14 = add nsw i32 %i1.0, 1
+    1 -  %6 = sub nsw i32 %e.0, %j.0
+    PHI -  %e.0 = phi i32 [ 3, %0 ], [ %8, %13 ]
+      2 -  %8 = add nsw i32 %5, %7
+        3 -  %5 = add nsw i32 %4, %f.0
+          4 -  %4 = add nsw i32 %j.0, %b.0
+          PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+            5 -  %12 = sdiv i32 %i1.0, 3
+            PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+              6 -  %14 = add nsw i32 %i1.0, 1
+          PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+        PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+          4 -  %9 = sdiv i32 %i1.0, 2
+          PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+            5 -  %14 = add nsw i32 %i1.0, 1
+===> LOOP FOUND ON THE DDG - Lenght: 3
+    PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+      2 -  %12 = sdiv i32 %i1.0, 3
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %8 = add nsw i32 %5, %7
+    1 -  %5 = add nsw i32 %4, %f.0
+      2 -  %4 = add nsw i32 %j.0, %b.0
+      PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+        3 -  %12 = sdiv i32 %i1.0, 3
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+      PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+    PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+      2 -  %9 = sdiv i32 %i1.0, 2
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+    1 -  %7 = sub nsw i32 %f.0, %6
+    PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+      2 -  %9 = sdiv i32 %i1.0, 2
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+      2 -  %6 = sub nsw i32 %e.0, %j.0
+      PHI -  %e.0 = phi i32 [ 3, %0 ], [ %8, %13 ]
+===> LOOP FOUND ON THE DDG - Lenght: 3
+      PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+        3 -  %12 = sdiv i32 %i1.0, 3
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %9 = sdiv i32 %i1.0, 2
+  PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+    1 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %10 = mul nsw i32 %5, %i1.0
+    1 -  %5 = add nsw i32 %4, %f.0
+      2 -  %4 = add nsw i32 %j.0, %b.0
+      PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+        3 -  %12 = sdiv i32 %i1.0, 3
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+      PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+    PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+      2 -  %9 = sdiv i32 %i1.0, 2
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+  PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+    1 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %11 = mul nsw i32 %7, %i1.0
+    1 -  %7 = sub nsw i32 %f.0, %6
+    PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+      2 -  %9 = sdiv i32 %i1.0, 2
+      PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+        3 -  %14 = add nsw i32 %i1.0, 1
+      2 -  %6 = sub nsw i32 %e.0, %j.0
+      PHI -  %e.0 = phi i32 [ 3, %0 ], [ %8, %13 ]
+        3 -  %8 = add nsw i32 %5, %7
+          4 -  %5 = add nsw i32 %4, %f.0
+            5 -  %4 = add nsw i32 %j.0, %b.0
+            PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+              6 -  %12 = sdiv i32 %i1.0, 3
+              PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+                7 -  %14 = add nsw i32 %i1.0, 1
+            PHI -  %b.0 = phi i32 [ 1, %0 ], [ %5, %13 ]
+          PHI -  %f.0 = phi i32 [ 2, %0 ], [ %9, %13 ]
+            5 -  %9 = sdiv i32 %i1.0, 2
+            PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+              6 -  %14 = add nsw i32 %i1.0, 1
+      PHI -  %j.0 = phi i32 [ 0, %0 ], [ %12, %13 ]
+        3 -  %12 = sdiv i32 %i1.0, 3
+        PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+          4 -  %14 = add nsw i32 %i1.0, 1
+  PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+    1 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  %12 = sdiv i32 %i1.0, 3
+  PHI -  %i1.0 = phi i32 [ 1, %0 ], [ %14, %13 ]
+    1 -  %14 = add nsw i32 %i1.0, 1
+-------------------------------------------------------------
+  0 -  br label %13
+Lower bound estimation: 3
+EXITING: dataDependenceBoundEstimator -----------------------------------------
