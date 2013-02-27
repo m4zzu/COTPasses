@@ -352,6 +352,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
   std::map<std::string, int> instructionsMap;
+  std::map<std::string, int> cyclePerUnit;
   int finalBound = 0, tempBound = 0, numOfCycles = 0;
 
   // Add all the operand available on the architecture in the new local map
@@ -386,9 +387,22 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
 
       llvm::errs() << record->first << ": " << numOfCycles << "*" << it->second << "/" << architecture->getNumberOfUnits(record->first) << " = " << tempBound << "\n";
 
-      finalBound = std::max(tempBound, finalBound);
+      // Group by unit and sum tempBound
+      std::vector<std::string> units = architecture->getUnit(record->first);
+      for (std::vector<std::string>::iterator unit = units.begin();
+                                                unit != units.end();
+                                                ++unit) {
+        if (cyclePerUnit.find(*unit) == cyclePerUnit.end())
+          cyclePerUnit.insert(std::pair<std::string, int> (*unit, 0));
+        cyclePerUnit[*unit] += tempBound;
+      }
+      // finalBound = std::max(tempBound, finalBound);
     }
   }
+
+  for (std::map<std::string, int>::iterator i = cyclePerUnit.begin(); i != cyclePerUnit.end(); ++i)
+    finalBound = std::max((*i).second, finalBound);
+
 /*
   std::map<std::string, int> instructionsPerUnit;
   std::map<std::string, int> maxCyclesPerUnit;
