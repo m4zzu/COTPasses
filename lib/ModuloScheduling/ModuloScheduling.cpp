@@ -165,7 +165,7 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
 }
 
 
-std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> instructions){
+std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> originalInstructions){
 
   llvm::errs() << "\n\n";
   llvm::errs() << "################################################################################\n";
@@ -178,15 +178,16 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
   std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
-  int deltaMin = std::max(resourcesBoundEstimator(instructions), dataDependenceBoundEstimator(instructions));
+  int deltaMin = std::max(resourcesBoundEstimator(originalInstructions), dataDependenceBoundEstimator(originalInstructions));
 
   // Order instructions by a priority
-  instructions = prioritizeInstructions(instructions);
+  std::vector<llvm::Instruction *> instructions = prioritizeInstructions(originalInstructions);
 
   // Infinite loop: we have no upper bound for delta
   for(int delta = deltaMin; ; ++delta){
 
-    int budget = instructions.size() * 3;                // Init the number of attempts
+    // Init the number of attempts
+    int budget = instructions.size() * 3;        
 
     // Init the resource table
     for (std::map<std::string, std::vector<llvm::Instruction *> >::iterator it = resourceTable.begin();
@@ -207,11 +208,12 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
     }
 
     llvm::errs() << "\nSCHEDULING LOOP - delta = " << delta << ", budget = " << budget << " #######################################################################################################\n";
+    
     // While we have attempts and some instructions are not scheduled, 
     // try to schedule them, decrementing the budget of attempts at every iteration
-    for(llvm::Instruction* currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime);
-        budget > 0 && currentInstruction != NULL;
-        currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--) {
+    for (llvm::Instruction* currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime);
+                            budget > 0 && currentInstruction != NULL;
+                            currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--) {
 
       llvm::errs() << "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
       llvm::errs() << "- Current instruction: " << (*currentInstruction) << "\n";
@@ -229,8 +231,8 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         }
       }
 
+      // Init tMin
       int tMin = 0;
-
       // Find the most slow predecessor and update tMin
       for (std::set<llvm::Instruction *>::iterator firstP = predecessors.begin(), 
                                                    lastP = predecessors.end(); 
@@ -241,20 +243,21 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
           // If the predecessor is scheduled
           if(schedTime[currentP] != -1){
-            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions, delta, schedTime);
+            // Calculate the earliest time the current instruction can be scheduled at
+            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, originalInstructions, delta, schedTime);
             tMin = std::max(tMin, currentSchedTime);
           }
         }
       }
 
       llvm::errs() << "Try to schedule:\n " << (*currentInstruction) << "\nbetween " << tMin << " and " << tMin + delta - 1 << ": ";
-      // Try to schedule h between tMin and tMin + delta - 1
+      
+       // Try to schedule the current instruction between tMin and tMin + delta - 1
        for(int t = tMin; t <= tMin + delta - 1; ++t){
         if(schedTime[currentInstruction] == -1){
 
-          // If the istruction can be scheduled
+          // If the istruction can be scheduled, schedule it
           if(canBeScheduled(currentInstruction, t, delta)){
-            // Schedule the current instruction
             schedule(currentInstruction, &schedTime, t, delta);
 
             llvm::errs() << " scheduled at time " << t << "\n";
@@ -264,19 +267,22 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         }
       }
 
-      // If h not scheduled
+      // If the instruction has not been scheduled, 
+      // schedule it as soon as possible, resolving all the existing conflicts
       if(schedTime[currentInstruction] == -1){
+
+        // Increase the last time of scheduling and use it, 
+        // if it's greater than the earliest time of schedule
         int t = std::max(tMin, 1 + lastTime[currentInstruction]);
-
-        llvm::errs() << " can't schedule in this interval => FORCE SCHEDULING at time: " << t << "\n";
-
-        // Schedule like there's no tomorrow!!
         schedule(currentInstruction, &schedTime, t, delta);
+
+        llvm::errs() << " can't schedule in this interval => FORCE SCHEDULING at time: " << t << "\n";    
         printResourceTable();
         printSchedTime(schedTime);
       }
 
-      // Update lastTime
+      // Remember the last schedule time of the current instruction,
+      // as it may be useful for the next attempts in order to explore a better scheduling
       lastTime[currentInstruction] = schedTime[currentInstruction];
 
       // Find all the successors, using llvm::Value methods (intra-loop body)
@@ -292,15 +298,18 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         }
       }
 
-      // if successor of h is execute before the end of h, then unschedule it
+      // if successor of the current instruction is execute before its end, then unschedule it
       for (std::set<llvm::Instruction *>::iterator firstS = successors.begin(), 
                                                    lastS = successors.end(); 
                                                    firstS != lastS; 
                                                    ++firstS){
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
+
+          // If the successor has been scheduled
           if(schedTime[currentS] != -1){
-            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions, delta, schedTime) > schedTime[currentS])
+            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, originalInstructions, delta, schedTime) > schedTime[currentS])
               unschedule(currentS, &schedTime);
+
               printResourceTable();
               printSchedTime(schedTime);
           }
@@ -319,29 +328,27 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
     }
 
 
-    // If all instructions are scheduled
+    // If all instructions have been scheduled, 
     if(scheduleCompleted(schedTime)){
 
       // Map with schedule time used as key
       std::map<int, llvm::Instruction *> schedTimeMap;
 
-      for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin();
-          iter != schedTime.end(); 
-          ++iter){
+      for (std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin();
+                                                        iter != schedTime.end(); 
+                                                        ++iter){
         schedTimeMap.insert(std::pair<int, llvm::Instruction *> (iter->second, iter->first));
       }
 
-      for(std::map<int, llvm::Instruction *>::iterator iter = schedTimeMap.begin();
-          iter != schedTimeMap.end();
-          ++iter){
+      for (std::map<int, llvm::Instruction *>::iterator iter = schedTimeMap.begin();
+                                                        iter != schedTimeMap.end();
+                                                        ++iter){
         scheduledInstructions.push_back(iter->second);
       }
       
       return scheduledInstructions;
     }
   }
-  
-  return scheduledInstructions;
 }
 
 
@@ -659,7 +666,7 @@ std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(std::vector<llvm:
   return succ;
 }
 
-int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta, std::map<llvm::Instruction *, int> schedTime){
+int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> originalInstructions, int delta, std::map<llvm::Instruction *, int> schedTime){
   llvm::errs() << "\nENTERED IN: delay --------------------------------------------\n";
   llvm::errs() << "- firstInstruction: " << (*firstInstruction) << "\n";
   llvm::errs() << "- secondInstruction: " << (*secondInstruction) << "\n";
@@ -669,9 +676,9 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
   int delay = 0, k = 0;
   int latency = architecture->getCycle(secondInstruction->getOpcodeName());
 
-  /* OLD IMPLEMENTATION: CHECK PRECEDENCES ON THE OLD LIST OF INSTRUCTION
-  for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
-                                                        instr != instructions.end();
+  // OLD IMPLEMENTATION: CHECK PRECEDENCES ON THE OLD LIST OF INSTRUCTION
+  for (std::vector<llvm::Instruction *>::iterator instr = originalInstructions.begin();
+                                                        instr != originalInstructions.end();
                                                         ++instr) {
     if (*instr == secondInstruction) {
       k = 1;
@@ -682,11 +689,11 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
       break;
     }
   }
-  */
+  
 
   // Find which instruction comes before
-  if(schedTime[firstInstruction] > schedTime[secondInstruction])
-    k = 1;
+  // if(schedTime[firstInstruction] > schedTime[secondInstruction])
+  //   k = 1;
 
   delay = latency - k * delta;
   llvm::errs() << "- latency:" << latency << "\n";
