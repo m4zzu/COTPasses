@@ -910,6 +910,9 @@ void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::I
       }
     }
   }
+  llvm::errs() << "The instruction:\n";
+  llvm::errs() << (*currentI) << "\n";
+  llvm::errs() << "has been unscheduled!\n\n";
 }
 
 
