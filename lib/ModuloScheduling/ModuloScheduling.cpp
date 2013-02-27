@@ -241,7 +241,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
           // If the predecessor is scheduled
           if(schedTime[currentP] != -1){
-            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions, delta);
+            int currentSchedTime = schedTime[currentP] + delay(currentP, currentInstruction, instructions, delta, schedTime);
             tMin = std::max(tMin, currentSchedTime);
           }
         }
@@ -259,8 +259,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
             llvm::errs() << " scheduled at time " << t << "\n";
             printResourceTable();
-
-
+            printSchedTime(schedTime);
           }
         }
       }
@@ -274,7 +273,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         // Schedule like there's no tomorrow!!
         schedule(currentInstruction, &schedTime, t, delta);
         printResourceTable();
-
+        printSchedTime(schedTime);
       }
 
       // Update lastTime
@@ -300,9 +299,10 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
                                                    ++firstS){
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
           if(schedTime[currentS] != -1){
-            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions, delta) > schedTime[currentS])
+            if(schedTime[currentInstruction] + delay(currentInstruction, currentS, instructions, delta, schedTime) > schedTime[currentS])
               unschedule(currentS, &schedTime);
               printResourceTable();
+              printSchedTime(schedTime);
           }
         }
       }
@@ -659,16 +659,17 @@ std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(std::vector<llvm:
   return succ;
 }
 
-int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta){
+int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta, std::map<llvm::Instruction *, int> schedTime){
   llvm::errs() << "\nENTERED IN: delay --------------------------------------------\n";
   llvm::errs() << "- firstInstruction: " << (*firstInstruction) << "\n";
   llvm::errs() << "- secondInstruction: " << (*secondInstruction) << "\n";
   llvm::errs() << "- delta: " << delta << "\n";
 
-  int delay = 0;
+  // Init all the local variables
+  int delay = 0, k = 0;
   int latency = architecture->getCycle(secondInstruction->getOpcodeName());
-  int k = 0;
 
+  /* OLD IMPLEMENTATION: CHECK PRECEDENCES ON THE OLD LIST OF INSTRUCTION
   for (std::vector<llvm::Instruction *>::iterator instr = instructions.begin();
                                                         instr != instructions.end();
                                                         ++instr) {
@@ -681,6 +682,11 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
       break;
     }
   }
+  */
+
+  // Find which instruction comes before
+  if(schedTime[firstInstruction] > schedTime[secondInstruction])
+    k = 1;
 
   delay = latency - k * delta;
   llvm::errs() << "- latency:" << latency << "\n";
@@ -745,9 +751,23 @@ void ModuloScheduling::printResourceTable() {
     }
   }
   
-  
   llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
 }
+
+
+void ModuloScheduling::printSchedTime(std::map<llvm::Instruction *, int> schedTime) {
+
+  llvm::errs() << "--------------- SCHED-TIME ---------------\n";
+  // The scheduling is completed if all the schedTimes are assigned (= different from -1)
+  for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
+          iter != schedTime.end(); 
+          ++iter){
+
+    llvm::errs() << iter->second << " : " << *(iter->first) << "\n"; 
+  }
+  llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
+}
+
 
 bool ModuloScheduling::canBeScheduled(llvm::Instruction * currentInstruction, int t, int delta) {
   std::vector<std::string> units = architecture->getUnit(currentInstruction->getOpcodeName());

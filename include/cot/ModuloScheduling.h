@@ -80,7 +80,7 @@ namespace cot {
 
     virtual std::set<llvm::Instruction *> findSuccessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI);
 
-    virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta);
+    virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta, std::map<llvm::Instruction *, int> schedTime);
 
     virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit, int delta);
     virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t, int delta);
@@ -97,6 +97,8 @@ namespace cot {
     virtual void unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime);
 
     virtual void printResourceTable();
+
+    virtual void printSchedTime(std::map<llvm::Instruction *, int> schedTime);
 
   };
 
