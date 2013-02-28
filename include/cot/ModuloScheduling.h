@@ -42,6 +42,8 @@ namespace cot {
     }
 
     virtual void print(llvm::raw_ostream &OS, const llvm::Module *Mod) const;
+    virtual void printResourceTable();
+    virtual void printSchedTime(std::map<llvm::Instruction *, int> schedTime);
 
 
   public:
@@ -76,29 +78,31 @@ namespace cot {
     // The following method is used to get the unscheduled instruction with the higher priority
     virtual llvm::Instruction* findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime);
 
+    // The following method is used to get the instructions that produce the values of the current instruction's operands
     virtual std::set<llvm::Instruction *> findPredecessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI);
 
+    // The following method is used to get the instructions that use the value of the current instruction's result
     virtual std::set<llvm::Instruction *> findSuccessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI);
 
+    // The delay method, implemented as definded in the book
     virtual int delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> instructions, int delta, std::map<llvm::Instruction *, int> schedTime);
 
+    // This method is used to find the first instruction conflicting with the one passed
     virtual llvm::Instruction* getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit, int delta);
-    virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t, int delta);
-    // virtual bool resourcesConflict(std::vector<std::string> a, std::vector<std::string> b);
 
+    // This method returns true if an allowed schedule exists for the current instruction
+    virtual bool canBeScheduled(llvm::Instruction * currentInstruction, int t, int delta);
+
+    // This method returns true if all instructions have been scheduled
     virtual bool scheduleCompleted(std::map<llvm::Instruction *, int> schedTime);
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
-
-    virtual void createNewBlock(llvm::BasicBlock *, std::vector<llvm::Instruction *>);
-
+    // The following method schedule the instruction, removing (greedy) conflicting instructions if an admissible schedule doesn't exist
     virtual void schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta);
 
+    // The following method unschedule an instruction
     virtual void unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime);
 
-    virtual void printResourceTable();
-
-    virtual void printSchedTime(std::map<llvm::Instruction *, int> schedTime);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
 
   };
 

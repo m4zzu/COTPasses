@@ -64,9 +64,6 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
 
   // Retrieve blocks
   const std::vector<llvm::BasicBlock *> blocks = L->getBlocks();
-
-  // Init here the instructions list, if you want to consider the induction variable in the loop body
-  // std::vector<llvm::Instruction *> instructions;
   
   // For every block
   for(unsigned i = 0; i < blocks.size(); ++i) {
@@ -93,52 +90,8 @@ bool ModuloScheduling::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM){
     }
   }
 
-  // Apply the algorithm here, if you want to consider the induction variable in the loop body
-  // instructions = doScheduling(instructions);
-
-
-  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
-  // llvm::BasicBlock *newBlock = createNewBlock(currentBlock, instructions);
-  // deleteOldBlock();
-
-  // Set the global variable, so it's accessible by the print method 
-  // scheduledInstructions = instructions;
-  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
-
   return true;   // Program modified
 }
-
-
-
-// REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
-void ModuloScheduling::createNewBlock(llvm::BasicBlock *CB, std::vector<llvm::Instruction *> instructions)
-{
-  // llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry");
-  // llvm::IRBuilder<> builder(llvm::getGlobalContext());
-  // builder.SetInsertPoint(CB);
-
-  // llvm::iplist<llvm::NodeTy, llvm::Traits> il = CB->getInstList();
-  // llvm::Instruction *pi = llvm::dyn_cast<llvm::Instruction>(CB->getFirstNonPHI());
-  // llvm::Instruction *newInst = new llvm::Instruction();
-  // CB->getInstList().insert(pi, newInst);
-  // llvm::BasicBlock::iterator ii(instToReplace);
-  // const llvm::Type * Int32Type = llvm::IntegerType::getInt32Ty(llvm::getGlobalContext());
-  // llvm::ReplaceInstWithInst(instToReplace->getParent()->getInstList(), ii, new llvm::AllocaInst(llvm::PointerType::getUnqual(Int32Type), 0, "ptrToReplacedInt"));
-
-  // llvm::BasicBlock* BB = llvm::BasicBlock::Create(llvm::getGlobalContext(), ("bb"));
-
-  // // //CB = &BB;
-  // u_int i = 0;
-  // u_int tot = instructions.size() - 1;
-  // for (i = 0; i < instructions.size() / 2; ++i) {
-  //   // llvm::AllocationInst *AI = llvm::dyn_cast<llvm::AllocationInst>(instructions[i]);
-  //     llvm::Instruction *Inst = llvm::dyn_cast<llvm::Instruction>(instructions[i]);
-
-  //     // CB->getInstList()
-  // }
-}
-// REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
-
 
 
 bool ModuloScheduling::doFinalization(){
@@ -150,28 +103,92 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   if(!Mod)
     return;
 
-  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
-  OS << "=======-------=======\n";
-  std::vector<Operand> A = architecture->getAllArch();
-  unsigned i = 0;
-  while (i < A.size()) {
-    OS << "Conf " << (i + 1) << ":\n";
-    OS << "\tInstr:\t" << A[i].getInstruction() << "\n";
-    OS << "\tUnit:\t" << A[i].getUnit() << "\n";
-    OS << "\tCycle:\t" << A[i].getCycle() << "\n";
-    ++i;
-  }
-  // REMOVE THIS ------------------------------------------------------------------------------------------------------------------------------------
+  // Input instructions
+
+  // Output
+  // resTable
+  // SchedTime
 }
 
 
+void ModuloScheduling::printResourceTable() {
+  std::vector<cot::Operand> ops = architecture->getAllArch();
+  int tot = resourceTable[ops[0].getUnit()].size();
+  std::vector<std::string> done;
+  // llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
+
+  // VERTICAL RAPRESENTATION
+
+  for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
+    if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
+      // llvm::errs() << op->getUnit() << "\t\t || \t\t";
+      done.push_back(op->getUnit());
+    }
+  }
+  // llvm::errs() << "\n";
+
+  // For all the rows
+  for (int i = 0; i < tot; ++i){
+    // llvm::errs() << i << "\t\t || ";
+
+    for (std::vector<std::string>::iterator it = done.begin(); it != done.end(); ++it){
+      if(resourceTable[*it][i] != NULL){
+        // llvm::errs() << (*resourceTable[*it][i]) << "\t\t || ";
+      }else{
+        // llvm::errs() << "nop" << "\t\t || ";
+      }
+    }
+
+    // llvm::errs() << "\n";
+  }
+  // llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
+
+  done.clear();
+  // HORIZONTAL RAPRESENTATION
+  // llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
+  // llvm::errs() << "\t";
+  for (int i = 0; i < tot; ++i)
+    // llvm::errs() << "  " << (i) << "  \t";
+  // llvm::errs() << "\n";
+  for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
+    if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
+      done.push_back(op->getUnit());
+      // llvm::errs() << op->getUnit() <<"\t";
+      for (int i = 0; i < tot; ++i)
+        if (resourceTable[op->getUnit()][i] != NULL){
+          llvm::Instruction * currentI = resourceTable[op->getUnit()][i];
+          // llvm::errs() << currentI->getOpcodeName() << "\t";
+        }else{
+          // llvm::errs() << "nop\t";
+        }
+      // llvm::errs() << "\n";
+    }
+  }
+  
+  // llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
+}
+
+
+void ModuloScheduling::printSchedTime(std::map<llvm::Instruction *, int> schedTime) {
+
+  // llvm::errs() << "--------------- SCHED-TIME ---------------\n";
+  // The scheduling is completed if all the schedTimes are assigned (= different from -1)
+  for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
+          iter != schedTime.end(); 
+          ++iter){
+
+    // llvm::errs() << iter->second << " : " << *(iter->first) << "\n"; 
+  }
+  // llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
+}
+
 std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm::Instruction *> originalInstructions){
 
-  llvm::errs() << "\n\n";
-  llvm::errs() << "################################################################################\n";
-  llvm::errs() << "####################            MODULO SCHEDULING           ####################\n";
-  llvm::errs() << "################################################################################";
-  llvm::errs() << "\n\n";
+  // llvm::errs() << "\n\n";
+  // llvm::errs() << "################################################################################\n";
+  // llvm::errs() << "####################            MODULO SCHEDULING           ####################\n";
+  // llvm::errs() << "################################################################################";
+  // llvm::errs() << "\n\n";
 
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
@@ -207,7 +224,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       schedTime.insert(std::pair<llvm::Instruction *, int> (instructions[i], -1));
     }
 
-    llvm::errs() << "\nSCHEDULING LOOP - delta = " << delta << ", budget = " << budget << " #######################################################################################################\n";
+    // llvm::errs() << "\nSCHEDULING LOOP - delta = " << delta << ", budget = " << budget << " #######################################################################################################\n";
     
     // While we have attempts and some instructions are not scheduled, 
     // try to schedule them, decrementing the budget of attempts at every iteration
@@ -215,19 +232,19 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
                             budget > 0 && currentInstruction != NULL;
                             currentInstruction = findHighPriorityUnscheduledInstruction(instructions, schedTime), budget--) {
 
-      llvm::errs() << "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
-      llvm::errs() << "- Current instruction: " << (*currentInstruction) << "\n";
+      // llvm::errs() << "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
+      // llvm::errs() << "- Current instruction: " << (*currentInstruction) << "\n";
 
-      // Find all the predecessors, using llvm::User methods (intra-loop body)
+      // Find all the predecessors, using llvm::User methods
       std::set<llvm::Instruction *> predecessors = findPredecessors(instructions, currentInstruction);
 
-      llvm::errs() << "- Predecessors:\n";
+      // llvm::errs() << "- Predecessors:\n";
       for (std::set<llvm::Instruction *>::iterator firstP = predecessors.begin(), 
                                                    lastP = predecessors.end(); 
                                                    firstP != lastP; 
                                                    ++firstP){
         if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*firstP)) {
-          llvm::errs() << "  " << (*currentP) << ", schedTime: " << schedTime[currentP] << "\n";
+          // llvm::errs() << "  " << (*currentP) << ", schedTime: " << schedTime[currentP] << "\n";
         }
       }
 
@@ -250,7 +267,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         }
       }
 
-      llvm::errs() << "Try to schedule:\n " << (*currentInstruction) << "\nbetween " << tMin << " and " << tMin + delta - 1 << ": ";
+      // llvm::errs() << "Try to schedule:\n " << (*currentInstruction) << "\nbetween " << tMin << " and " << tMin + delta - 1 << ": ";
       
        // Try to schedule the current instruction between tMin and tMin + delta - 1
        for(int t = tMin; t <= tMin + delta - 1; ++t){
@@ -260,7 +277,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
           if(canBeScheduled(currentInstruction, t, delta)){
             schedule(currentInstruction, &schedTime, t, delta);
 
-            llvm::errs() << " scheduled at time " << t << "\n";
+            // llvm::errs() << " scheduled at time " << t << "\n";
             printResourceTable();
             printSchedTime(schedTime);
           }
@@ -276,7 +293,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
         int t = std::max(tMin, 1 + lastTime[currentInstruction]);
         schedule(currentInstruction, &schedTime, t, delta);
 
-        llvm::errs() << " can't schedule in this interval => FORCE SCHEDULING at time: " << t << "\n";    
+        // llvm::errs() << " can't schedule in this interval => FORCE SCHEDULING at time: " << t << "\n";    
         printResourceTable();
         printSchedTime(schedTime);
       }
@@ -288,13 +305,13 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       // Find all the successors, using llvm::Value methods (intra-loop body)
       std::set<llvm::Instruction *> successors = findSuccessors(instructions, currentInstruction);
 
-      llvm::errs() << "- Successors:\n";
+      // llvm::errs() << "- Successors:\n";
       for (std::set<llvm::Instruction *>::iterator firstS = successors.begin(), 
                                                    lastS = successors.end(); 
                                                    firstS != lastS; 
                                                    ++firstS){
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
-          llvm::errs() << "  " << (*currentS) << ", schedTime: " << schedTime[currentS] << "\n";
+          // llvm::errs() << "  " << (*currentS) << ", schedTime: " << schedTime[currentS] << "\n";
         }
       }
 
@@ -317,16 +334,14 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
       }
 
       // Remove from the scheduling all the instructions (other than currentInstruction) involved in a resource conflict
-      /* ALREADY DONE IN SCHEDULE(...)
+      /* NOTE: this last operations have been already done in schedule(...) method
       for(llvm::Instruction* conflictingInstruction = getFirstConflictingInstruction(currentInstruction, schedTime[currentInstruction]); 
           conflictingInstruction != NULL && conflictingInstruction != currentInstruction; 
           conflictingInstruction = getFirstConflictingInstruction(currentInstruction, t)){
         schedTime[conflictingInstruction] = -1;
       }
       */
-
     }
-
 
     // If all instructions have been scheduled, 
     if(scheduleCompleted(schedTime)){
@@ -354,7 +369,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
 int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> instructions) {
 
-  llvm::errs() << "\nENTERED IN: resourcesBoundEstimator -------------------------------------------\n";
+  // llvm::errs() << "\nENTERED IN: resourcesBoundEstimator -------------------------------------------\n";
 
   // Get all the operands supported by the architecture
   std::vector<std::string> operands = architecture->getSupportedOperand();
@@ -362,14 +377,14 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
   std::map<std::string, int> cyclePerUnit;
   int finalBound = 0, tempBound = 0, numOfCycles = 0;
 
-  // Add all the operand available on the architecture in the new local map
+  // Add all the operands available on the architecture in the new local map
   for (std::vector<std::string>::iterator op = operands.begin();
                                           op != operands.end();
                                           ++op){
     instructionsMap.insert(std::pair<std::string, int>(*op, 0));
   }
 
-  // For all the instructions to be scheduled
+  // For all the instructions to be scheduled, increment the number of the operands of that kind
   for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
                                                   istr != instructions.end();
                                                   ++istr) {
@@ -381,7 +396,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
       instructionsMap.insert(std::pair<std::string, int>(op, 1));       // Add the new operand: it will be considered for the bound estimation as well
   }
 
-  // For every operand
+  // For all the operands available on the architecture
   for (std::map<std::string, int>::iterator record = instructionsMap.begin();
                                             record != instructionsMap.end();
                                             ++record) {
@@ -392,7 +407,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
       // Estimate the bound of the current operand
       tempBound = ceil(numOfCycles * it->second / architecture->getNumberOfUnits(record->first));
 
-      llvm::errs() << record->first << ": " << numOfCycles << "*" << it->second << "/" << architecture->getNumberOfUnits(record->first) << " = " << tempBound << "\n";
+      // llvm::errs() << record->first << ": " << numOfCycles << "*" << it->second << "/" << architecture->getNumberOfUnits(record->first) << " = " << tempBound << "\n";
 
       // Group by unit and sum tempBound
       std::vector<std::string> units = architecture->getUnit(record->first);
@@ -403,68 +418,16 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
           cyclePerUnit.insert(std::pair<std::string, int> (*unit, 0));
         cyclePerUnit[*unit] += tempBound;
       }
-      // finalBound = std::max(tempBound, finalBound);
     }
   }
 
+  // Find the max bound
   for (std::map<std::string, int>::iterator i = cyclePerUnit.begin(); i != cyclePerUnit.end(); ++i)
     finalBound = std::max((*i).second, finalBound);
 
-/*
-  std::map<std::string, int> instructionsPerUnit;
-  std::map<std::string, int> maxCyclesPerUnit;
+  // llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
 
-  int finalBound = 0, tempBound = 0, cycles = 0;
-  std::vector<int> v = [0 ,0 ];
-
-
-  // For all the instructions to be scheduled
-  for (std::vector<llvm::Instruction *>::iterator istr = instructions.begin();
-                                                  istr != instructions.end();
-                                                  ++istr) {
-
-    // Get suitable units
-    std::vector<std::string> suitableUnits = architecture->getUnit((*istr)->getOpcodeName());
-
-    // For every suitable unit
-    for (std::vector<std::string>::iterator unit = suitableUnits.begin(); 
-                                            unit != suitableUnits.end(); 
-                                            ++unit){
-
-      // Add the unit to the list of available units (if not present)
-      if (instructionsPerUnit.find(*unit) == instructionsPerUnit.end()){
-        instructionsPerUnit.insert(std::pair<std::string, int>(*unit, 0));
-        maxCyclesPerUnit.insert(std::pair<std::string, int>(*unit, 0));
-      }
-
-      // Increment the instructions count for that unit
-      ++instructionsPerUnit[*unit];
-
-      // Set the actual max number of cycles found
-      maxCyclesPerUnit[*unit] = std::max(maxCyclesPerUnit[*unit], architecture->getCycle((*istr)->getOpcodeName()));
-    }
-  }
-
-  // For every available unit
-  for (std::map<std::string, int>::iterator unit = instructionsPerUnit.begin();
-                                            unit != instructionsPerUnit.end();
-                                            ++unit) {
-    cycles = maxCyclesPerUnit[*unit];
-    if (cycles > 0) {
-
-      // Estimate the bound of the current operand
-      tempBound = ceil(cycles * unit->second / architecture->getNumberOfUnits(unit->first));    // WTF??
-
-      llvm::errs() << unit->first << ": " << cycles << "*" << it->second << "/" << architecture->getNumberOfUnits(unit->first) << " = " << tempBound << "\n";
-
-      finalBound = std::max(tempBound, finalBound);
-    }
-  }
-  */
-
-  llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
-
-  llvm::errs() << "EXITING: resourcesBoundEstimator ----------------------------------------------\n";
+  // llvm::errs() << "EXITING: resourcesBoundEstimator ----------------------------------------------\n";
 
   return finalBound;
 }
@@ -472,7 +435,7 @@ int ModuloScheduling::resourcesBoundEstimator(std::vector<llvm::Instruction *> i
 
 int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction *> instructions) {
 
-  llvm::errs() << "\nENTERED IN: dataDependenceBoundEstimator -----------------------------------------\n";
+  // llvm::errs() << "\nENTERED IN: dataDependenceBoundEstimator -----------------------------------------\n";
 
   // Create a map: {instruction, isVisited}
   // Init isVisited to false
@@ -492,19 +455,17 @@ int ModuloScheduling::dataDependenceBoundEstimator(std::vector<llvm::Instruction
     // Skip "phi" function: they will not be scheduled on the pipeline
     if(!llvm::StringRef("phi").equals(instructions[i]->getOpcodeName())){
 
-      llvm::errs() << "-------------------------------------------------------------\n";
+      // llvm::errs() << "-------------------------------------------------------------\n";
 
       // Recursively find definitions of the operands of the instruction
       tempBound = findDefRecursive(instructions[i], instructionsMap, instructions[i], 0);
-
     }
 
     finalBound = std::max(tempBound, finalBound);
   }
 
-  llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
-
-  llvm::errs() << "EXITING: dataDependenceBoundEstimator -----------------------------------------\n";
+  // llvm::errs() << "Lower bound estimation: " << finalBound << "\n";
+  // llvm::errs() << "EXITING: dataDependenceBoundEstimator -----------------------------------------\n";
 
   return finalBound;
 }
@@ -514,12 +475,12 @@ int ModuloScheduling::findDefRecursive(llvm::Instruction * startingI, std::map<l
   
   // Print to screen
   for (int i = 0; i <= offset; ++i)
-    llvm::errs() << "  ";
+    // llvm::errs() << "  ";
   
   if(!llvm::StringRef("phi").equals(currentI->getOpcodeName())){
-    llvm::errs() << offset << " -" << (*currentI) << "\n";
+    // llvm::errs() << offset << " -" << (*currentI) << "\n";
   }else{
-    llvm::errs() << "PHI -" << (*currentI) << "\n";
+    // llvm::errs() << "PHI -" << (*currentI) << "\n";
   }
 
   // Set the current instruction as visited
@@ -553,7 +514,7 @@ int ModuloScheduling::findDefRecursive(llvm::Instruction * startingI, std::map<l
           // A cycle in the DDG has been found: set a valid currentOffset
           currentOffset = offset + architecture->getCycle(definerI->getOpcodeName());
 
-          llvm::errs() << "===> LOOP FOUND ON THE DDG - Lenght: " << currentOffset << "\n";
+          // llvm::errs() << "===> LOOP FOUND ON THE DDG - Lenght: " << currentOffset << "\n";
 
         }else{
           // A cycle in the DDG has been found, but it doesn't involve the starting instruction: set an invalid currentOffset
@@ -567,6 +528,7 @@ int ModuloScheduling::findDefRecursive(llvm::Instruction * startingI, std::map<l
 
   return finalOffset;
 }
+
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
 
@@ -589,89 +551,22 @@ std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::v
   for (u_int i = 0; i < operandsPriority.size(); ++i){
     for (u_int j = 0; j < instructions.size(); ++j){
       if(operandsPriority[i].compare(instructions[j]->getOpcodeName()) == 0){
-        llvm::errs() << *instructions[j] << "\n";
+        // llvm::errs() << *instructions[j] << "\n";
         prioritizedInstructions.push_back(instructions[j]);
         scheduled[j] = true;
       }
     }
   }
 
+  // Add remaining operations
   for(u_int j = 0; j < instructions.size(); ++j){
     if(!scheduled[j])
       prioritizedInstructions.push_back(instructions[j]);
   }
 
-
-  // std::vector<llvm::Instruction *> prioritizedInstructions;
-  // std::vector<bool> scheduled;
-  // // Order by operands' priority
-  // for (std::vector<std::string>::iterator currentOp = operandsPriority.begin(); currentOp != operandsPriority.end(); ++currentOp){
-  //   for (std::vector<llvm::Instruction *>::iterator currentI = instructions.begin(); currentI != instructions.end(); ++currentI){
-  //     if(currentOp->compare((*currentI)->getOpcodeName())){
-  //       prioritizedInstructions.push_back((*currentI));
-  //         llvm::errs() << (*currentI) << " uno slashenne \n";
-
-  //       instructions.erase(currentI);
-
-
-  //     }  
-  //   }
-  // }
-
-
-
-
-  // // Define a priority on the operand
-  // std::vector<llvm::StringRef> operandsPriority;
-  // operandsPriority.push_back(llvm::StringRef("sub"));
-  // operandsPriority.push_back(llvm::StringRef("add"));
-  // operandsPriority.push_back(llvm::StringRef("sdiv"));
-  // operandsPriority.push_back(llvm::StringRef("mul"));
-
-  // std::vector<llvm::Instruction *> prioritizedInstructions;
-
-  // // Order by operands' priority
-  // for (std::vector<std::string>::iterator opIt = operandsPriority.begin(); opIt != operandsPriority.end(); ++opIt){
-  //   if(llvm::StringRef currentOp = llvm::dyn_cast<llvm::StringRef>(*opIt)){
-
-  //     for (std::vector<llvm::Instruction *>::iterator instrIt = instructions.begin(); instrIt != instructions.end(); ++instrIt){
-  //       if(llvm::Instruction * currentI = llvm::dyn_cast<llvm::Instruction>(*instrIt)){
-
-  //         if(currentOp.compare(currentI->getOpcodeName())){
-  //           prioritizedInstructions.push_back(currentI);
-  //           instructions.erase(currentI);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  // // Add remaining instructions
-  // for (std::vector<llvm::Instruction *>::iterator instrIt = instructions.begin(); instrIt != instructions.end(); ++instrIt){ 
-  //   if(llvm::Instruction * currentI = llvm::dyn_cast<llvm::Instruction>(*instrIt)){
-
-  //       prioritizedInstructions.push_back(currentI);
-  //   }
-  // }
-
-  /*
-  if(instructions.size() == 10){
-    
-    prioritizedInstructions.push_back(instructions[2]);     // c
-    prioritizedInstructions.push_back(instructions[3]);     // d
-    prioritizedInstructions.push_back(instructions[4]);     // e
-    prioritizedInstructions.push_back(instructions[0]);     // a
-    prioritizedInstructions.push_back(instructions[1]);     // b
-    prioritizedInstructions.push_back(instructions[5]);     // f
-    prioritizedInstructions.push_back(instructions[8]);     // j
-    prioritizedInstructions.push_back(instructions[6]);     // g
-    prioritizedInstructions.push_back(instructions[7]);     // h
-    instructions = prioritizedInstructions;
-  }
-  */
-
   return prioritizedInstructions;
 }
+
 
 llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime){
   for (u_int i = 0; i < instructions.size(); ++i) {
@@ -682,6 +577,7 @@ llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std:
   }
   return NULL;                       // NO unscheduled instruction found
 }
+
 
 std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI) {
 
@@ -712,7 +608,6 @@ std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(std::vector<llv
               pred.insert(currentP);
             }
         }
-
       }else{
         // Add it to the predecessors, if it's not present, it's different from itself and it's in the loop body
         if(pred.find(definerI) == pred.end() && definerI != currentI && std::find(instructions.begin(), instructions.end(), definerI) != instructions.end()){
@@ -724,6 +619,7 @@ std::set<llvm::Instruction *> ModuloScheduling::findPredecessors(std::vector<llv
 
   return pred;
 }
+
 
 std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(std::vector<llvm::Instruction *> instructions, llvm::Instruction * currentI) {
 
@@ -753,7 +649,6 @@ std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(std::vector<llvm:
             if(succ.find(currentS) == succ.end() && currentS != currentI && std::find(instructions.begin(), instructions.end(), currentS) != instructions.end())
               succ.insert(currentS);              
         }
-
       }else{
         // Add it to the successors, if it's not present, it's different from itself and it's in the loop body
         if(succ.find(userI) == succ.end() && userI != currentI && std::find(instructions.begin(), instructions.end(), userI) != instructions.end())
@@ -765,17 +660,18 @@ std::set<llvm::Instruction *> ModuloScheduling::findSuccessors(std::vector<llvm:
   return succ;
 }
 
+
 int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruction * secondInstruction, std::vector<llvm::Instruction *> originalInstructions, int delta, std::map<llvm::Instruction *, int> schedTime){
-  llvm::errs() << "\nENTERED IN: delay --------------------------------------------\n";
-  llvm::errs() << "- firstInstruction: " << (*firstInstruction) << "\n";
-  llvm::errs() << "- secondInstruction: " << (*secondInstruction) << "\n";
-  llvm::errs() << "- delta: " << delta << "\n";
+  // llvm::errs() << "\nENTERED IN: delay --------------------------------------------\n";
+  // llvm::errs() << "- firstInstruction: " << (*firstInstruction) << "\n";
+  // llvm::errs() << "- secondInstruction: " << (*secondInstruction) << "\n";
+  // llvm::errs() << "- delta: " << delta << "\n";
 
   // Init all the local variables
   int delay = 0, k = 0;
   int latency = architecture->getCycle(secondInstruction->getOpcodeName());
 
-  // OLD IMPLEMENTATION: CHECK PRECEDENCES ON THE OLD LIST OF INSTRUCTION
+  // Check precedences on the original list of instructions 
   for (std::vector<llvm::Instruction *>::iterator instr = originalInstructions.begin();
                                                         instr != originalInstructions.end();
                                                         ++instr) {
@@ -788,90 +684,15 @@ int ModuloScheduling::delay(llvm::Instruction * firstInstruction, llvm::Instruct
       break;
     }
   }
-  
-
-  // Find which instruction comes before
-  // if(schedTime[firstInstruction] > schedTime[secondInstruction])
-  //   k = 1;
 
   delay = latency - k * delta;
-  llvm::errs() << "- latency:" << latency << "\n";
-  llvm::errs() << "- k:" << k << "\n";
+  // llvm::errs() << "- latency:" << latency << "\n";
+  // llvm::errs() << "- k:" << k << "\n";
 
-  llvm::errs() << "- Output delay:" << delay << "\n";
-  llvm::errs() << "EXITING: delay -----------------------------------------------\n";
+  // llvm::errs() << "- Output delay:" << delay << "\n";
+  // llvm::errs() << "EXITING: delay -----------------------------------------------\n";
 
   return delay;
-}
-
-
-void ModuloScheduling::printResourceTable() {
-  std::vector<cot::Operand> ops = architecture->getAllArch();
-  int tot = resourceTable[ops[0].getUnit()].size();
-  std::vector<std::string> done;
-  llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
-
-  // VERTICAL RAPRESENTATION
-
-  for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
-    if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
-      llvm::errs() << op->getUnit() << "\t\t || \t\t";
-      done.push_back(op->getUnit());
-    }
-  }
-  llvm::errs() << "\n";
-
-  // For all the rows
-  for (int i = 0; i < tot; ++i){
-    llvm::errs() << i << "\t\t || ";
-
-    for (std::vector<std::string>::iterator it = done.begin(); it != done.end(); ++it){
-      if(resourceTable[*it][i] != NULL)
-        llvm::errs() << (*resourceTable[*it][i]) << "\t\t || ";
-      else
-        llvm::errs() << "nop" << "\t\t || ";
-    }
-
-    llvm::errs() << "\n";
-  }
-  llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
-
-  done.clear();
-  // HORIZONTAL RAPRESENTATION
-  llvm::errs() << "--------------- RESOURCE TABLE ---------------\n";
-  llvm::errs() << "\t";
-  for (int i = 0; i < tot; ++i)
-    llvm::errs() << "  " << (i) << "  \t";
-  llvm::errs() << "\n";
-  for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
-    if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
-      done.push_back(op->getUnit());
-      llvm::errs() << op->getUnit() <<"\t";
-      for (int i = 0; i < tot; ++i)
-        if (resourceTable[op->getUnit()][i] != NULL){
-          llvm::Instruction * currentI = resourceTable[op->getUnit()][i];
-          llvm::errs() << currentI->getOpcodeName() << "\t";
-        }else 
-          llvm::errs() << "nop\t";
-      llvm::errs() << "\n";
-    }
-  }
-  
-  llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
-}
-
-
-void ModuloScheduling::printSchedTime(std::map<llvm::Instruction *, int> schedTime) {
-
-  llvm::errs() << "--------------- SCHED-TIME ---------------\n";
-  // The scheduling is completed if all the schedTimes are assigned (= different from -1)
-  for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
-          iter != schedTime.end(); 
-          ++iter){
-
-    llvm::errs() << iter->second << " : " << *(iter->first) << "\n"; 
-  }
-  llvm::errs() << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
 }
 
 
@@ -885,6 +706,8 @@ bool ModuloScheduling::canBeScheduled(llvm::Instruction * currentInstruction, in
                                           ++unit) {
     canBeScheduled = true;
     for (int i = t; i < (t + latency); ++i) {
+
+      // If there's no space to allocate the instruction
       if (resourceTable[*unit][i % delta] != NULL) {
         canBeScheduled = false;
         break;
@@ -896,9 +719,8 @@ bool ModuloScheduling::canBeScheduled(llvm::Instruction * currentInstruction, in
   return canBeScheduled;
 }
 
+
 llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instruction * currentInstruction, int t, std::string schedulingUnit, int delta) {
-  
-  // NOTE: in SSA form, we only have conflicts on resources
 
   // Get all the units available to execute the instruction
   std::vector<std::string> units = architecture->getUnit(currentInstruction->getOpcodeName());
@@ -908,18 +730,19 @@ llvm::Instruction* ModuloScheduling::getFirstConflictingInstruction(llvm::Instru
   for (int i = t; i < (t + latency); ++i) {
     if (resourceTable[schedulingUnit][i % delta] != NULL) {
       // return the conflict instruction
-      llvm::errs() << "\n==> First conflicting instruction: " << (*(resourceTable[schedulingUnit][i % delta])) << "\n";
+      // llvm::errs() << "\n==> First conflicting instruction: " << (*(resourceTable[schedulingUnit][i % delta])) << "\n";
       return resourceTable[schedulingUnit][i % delta];
     }
   }
 
-  llvm::errs() << "\n==> No conflicting instruction found\n";
+  // llvm::errs() << "\n==> No conflicting instruction found\n";
   return NULL;
 }
 
+
 bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> schedTime){
 
-  llvm::errs() << "\nENTERED IN: scheduleCompleted --------------------------------------------\n";
+  // llvm::errs() << "\nENTERED IN: scheduleCompleted --------------------------------------------\n";
 
   // The scheduling is completed if all the schedTimes are assigned (= different from -1)
   for(std::map<llvm::Instruction *, int>::iterator iter = schedTime.begin(); 
@@ -927,15 +750,16 @@ bool ModuloScheduling::scheduleCompleted(std::map<llvm::Instruction *, int> sche
           ++iter){
 
         if(iter->second == -1){
-          llvm::errs() << "At least one instruction has not been scheduled: " << (*(iter->first)) << "\n";
-          llvm::errs() << "EXITING: scheduleCompleted -----------------------------------------------\n";
+          // llvm::errs() << "At least one instruction has not been scheduled: " << (*(iter->first)) << "\n";
+          // llvm::errs() << "EXITING: scheduleCompleted -----------------------------------------------\n";
           return false;
         }
   }
-  llvm::errs() << "All instructions scheduled\n";
-  llvm::errs() << "EXITING: scheduleCompleted -----------------------------------------------\n";
+  // llvm::errs() << "All instructions scheduled\n";
+  // llvm::errs() << "EXITING: scheduleCompleted -----------------------------------------------\n";
   return true;
 }
+
 
 void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime, int t, int delta) {
 
@@ -945,7 +769,8 @@ void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Ins
   std::string schedulingUnit;
 
   if(canBeScheduled(currentI, t, delta)){
-    // Find the first unit where the instruction can be scheduled
+    // If the instruction can be scheduled without any conflict, 
+    // find the first available unit
     for (std::vector<std::string>::iterator unit = units.begin();
                                             unit != units.end();
                                             ++unit) {
@@ -960,10 +785,10 @@ void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Ins
         break;
     }
   }else{
-    // Greedy: select the first unit
+    // Select (greedy) a unit to schedule the instruction on,
+    // and unschedule all the conflicting instructions
     schedulingUnit = units[0];
 
-    // Unschedule all the conflicting instructionsMap
     for(llvm::Instruction * conflictingInstruction = getFirstConflictingInstruction(currentI, t, schedulingUnit, delta);
                                       conflictingInstruction != NULL;
                                       conflictingInstruction = getFirstConflictingInstruction(currentI, t, schedulingUnit, delta)){
@@ -979,10 +804,11 @@ void ModuloScheduling::schedule(llvm::Instruction * currentI, std::map<llvm::Ins
     int index = i % delta;
     resourceTable[schedulingUnit][index] = currentI;
   }
-
 }
 
+
 void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::Instruction *, int> * schedTime){
+  // Mark the instruction as unscheduled and remove it from the resource table
   (*schedTime)[currentI] = -1;
   std::vector<std::string> units = architecture->getUnit(currentI->getOpcodeName());
   for (std::vector<std::string>::iterator unit = units.begin();
@@ -995,9 +821,9 @@ void ModuloScheduling::unschedule(llvm::Instruction * currentI, std::map<llvm::I
       }
     }
   }
-  llvm::errs() << "The instruction:\n";
-  llvm::errs() << (*currentI) << "\n";
-  llvm::errs() << "has been unscheduled!\n\n";
+  // llvm::errs() << "The instruction:\n";
+  // llvm::errs() << (*currentI) << "\n";
+  // llvm::errs() << "has been unscheduled!\n\n";
 }
 
 
@@ -1008,6 +834,7 @@ void ModuloScheduling::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
 
 
 using namespace llvm;
+
 
 INITIALIZE_PASS_BEGIN(ModuloScheduling,
                       "modulo-scheduling",
