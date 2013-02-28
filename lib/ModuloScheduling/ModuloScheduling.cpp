@@ -570,9 +570,93 @@ int ModuloScheduling::findDefRecursive(llvm::Instruction * startingI, std::map<l
 
 std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::vector<llvm::Instruction *> instructions){
 
-  // Uncomment these lines to reproduce the priority order of the example
+  // Define a priority on the operand
+  std::vector<std::string> operandsPriority;
+  operandsPriority.push_back("sub");
+  operandsPriority.push_back("add");
+  operandsPriority.push_back("sdiv");
+  operandsPriority.push_back("mul");
+
+  std::vector<llvm::Instruction *> prioritizedInstructions;
+
+  // Init schedule
+  std::vector<bool> scheduled;
+  for(u_int j = 0; j < instructions.size(); ++j){
+    scheduled.push_back(false);
+  }
+
+  // Order by operands' priority
+  for (u_int i = 0; i < operandsPriority.size(); ++i){
+    for (u_int j = 0; j < instructions.size(); ++j){
+      if(operandsPriority[i].compare(instructions[j]->getOpcodeName()) == 0){
+        llvm::errs() << *instructions[j] << "\n";
+        prioritizedInstructions.push_back(instructions[j]);
+        scheduled[j] = true;
+      }
+    }
+  }
+
+  for(u_int j = 0; j < instructions.size(); ++j){
+    if(!scheduled[j])
+      prioritizedInstructions.push_back(instructions[j]);
+  }
+
+
+  // std::vector<llvm::Instruction *> prioritizedInstructions;
+  // std::vector<bool> scheduled;
+  // // Order by operands' priority
+  // for (std::vector<std::string>::iterator currentOp = operandsPriority.begin(); currentOp != operandsPriority.end(); ++currentOp){
+  //   for (std::vector<llvm::Instruction *>::iterator currentI = instructions.begin(); currentI != instructions.end(); ++currentI){
+  //     if(currentOp->compare((*currentI)->getOpcodeName())){
+  //       prioritizedInstructions.push_back((*currentI));
+  //         llvm::errs() << (*currentI) << " uno slashenne \n";
+
+  //       instructions.erase(currentI);
+
+
+  //     }  
+  //   }
+  // }
+
+
+
+
+  // // Define a priority on the operand
+  // std::vector<llvm::StringRef> operandsPriority;
+  // operandsPriority.push_back(llvm::StringRef("sub"));
+  // operandsPriority.push_back(llvm::StringRef("add"));
+  // operandsPriority.push_back(llvm::StringRef("sdiv"));
+  // operandsPriority.push_back(llvm::StringRef("mul"));
+
+  // std::vector<llvm::Instruction *> prioritizedInstructions;
+
+  // // Order by operands' priority
+  // for (std::vector<std::string>::iterator opIt = operandsPriority.begin(); opIt != operandsPriority.end(); ++opIt){
+  //   if(llvm::StringRef currentOp = llvm::dyn_cast<llvm::StringRef>(*opIt)){
+
+  //     for (std::vector<llvm::Instruction *>::iterator instrIt = instructions.begin(); instrIt != instructions.end(); ++instrIt){
+  //       if(llvm::Instruction * currentI = llvm::dyn_cast<llvm::Instruction>(*instrIt)){
+
+  //         if(currentOp.compare(currentI->getOpcodeName())){
+  //           prioritizedInstructions.push_back(currentI);
+  //           instructions.erase(currentI);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
+  // // Add remaining instructions
+  // for (std::vector<llvm::Instruction *>::iterator instrIt = instructions.begin(); instrIt != instructions.end(); ++instrIt){ 
+  //   if(llvm::Instruction * currentI = llvm::dyn_cast<llvm::Instruction>(*instrIt)){
+
+  //       prioritizedInstructions.push_back(currentI);
+  //   }
+  // }
+
+  /*
   if(instructions.size() == 10){
-    std::vector<llvm::Instruction *> prioritizedInstructions;
+    
     prioritizedInstructions.push_back(instructions[2]);     // c
     prioritizedInstructions.push_back(instructions[3]);     // d
     prioritizedInstructions.push_back(instructions[4]);     // e
@@ -584,8 +668,9 @@ std::vector<llvm::Instruction *> ModuloScheduling::prioritizeInstructions(std::v
     prioritizedInstructions.push_back(instructions[7]);     // h
     instructions = prioritizedInstructions;
   }
+  */
 
-  return instructions;
+  return prioritizedInstructions;
 }
 
 llvm::Instruction* ModuloScheduling::findHighPriorityUnscheduledInstruction(std::vector<llvm::Instruction *> instructions, std::map<llvm::Instruction *, int>  schedTime){

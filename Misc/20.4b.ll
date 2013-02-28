@@ -49,7 +49,7 @@ define i32 @main() nounwind uwtable {
   store i32 %17, i32* %d, align 4
   %18 = load i32* %b, align 4
   %19 = load i32* %d, align 4
-  %20 = add nsw i32 %18, %19
+  %20 = sub nsw i32 %18, %19
   store i32 %20, i32* %e, align 4
   %21 = load i32* %i1, align 4
   %22 = sdiv i32 %21, 2
