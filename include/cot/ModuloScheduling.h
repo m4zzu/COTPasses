@@ -54,6 +54,7 @@ namespace cot {
     std::vector<llvm::Instruction *> scheduledInstructions;
     Architecture *architecture;
     std::map<std::string, std::vector<llvm::Instruction *> > resourceTable;
+    std::map<llvm::Instruction *, int> schedTime;
 
     // The doScheduling method implements the Modulo Scheduling algorithm as it's described in: 
     // "Modern Compiler Implementation in Java", 

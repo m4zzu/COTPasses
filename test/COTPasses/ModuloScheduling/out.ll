@@ -1,5 +1,5 @@
 ; RUN: opt -load %projshlibdir/COTPasses.so \
-; RUN:     -mem2reg -modulo-scheduling -analyze      \
+; RUN:     -file-parser -analyze      \
 ; RUN:     -S -o - %s | FileCheck %s
 ; REQUIRES: loadable_module
 
@@ -81,17 +81,20 @@ define i32 @main() nounwind uwtable {
   ret i32 0
 }
 
-
-;CHECK: Printing analysis 'Iterative Modulo Scheduling algorithm implementation':
-;CHECK-NEXT: --------------- SCHED-TIME ---------------
-;CHECK-NEXT: 3 :   %4 = add nsw i32 %j.0, %b.0
-;CHECK-NEXT: 6 :   %7 = sub nsw i32 %f.0, %6
-;CHECK-NEXT: 4 :   %5 = add nsw i32 %4, %f.0
-;CHECK-NEXT: 5 :   %6 = sub nsw i32 %e.0, %j.0
-;CHECK-NEXT: 7 :   %8 = sub nsw i32 %5, %7
-;CHECK-NEXT: 0 :   %9 = sdiv i32 %i1.0, 2
-;CHECK-NEXT: 7 :   %10 = mul nsw i32 %5, %i1.0
-;CHECK-NEXT: 8 :   %11 = mul nsw i32 %7, %i1.0
-;CHECK-NEXT: 1 :   %12 = sdiv i32 %i1.0, 3
-;CHECK-NEXT: 0 :   br label %13
-;CHECK-NEXT: --------------- ~~~~~~~~~~~~~~ ---------------
+;CHECK: Printing analysis 'Parses architectural configuration file':
+;CHECK-NEXT: =======-------=======
+;CHECK-NEXT: Conf 1:
+;CHECK-NEXT:   Instr:  add
+;CHECK-NEXT:   Unit:   ALU1
+;CHECK-NEXT:   Cycle:  1
+;CHECK-NEXT: Conf 2:
+;CHECK-NEXT:   Instr:  sub
+;CHECK-NEXT:   Unit:   ALU1
+;CHECK-NEXT:   Cycle:  1
+;CHECK-NEXT: Conf 3:
+;CHECK-NEXT:   Instr:  mul
+;CHECK-NEXT:   Unit:   ALU2
+;CHECK-NEXT:   Cycle:  1
+;CHECK-NEXT: Conf 4:
+;CHECK-NEXT:   Instr:  sdiv
+;CHECK-NEXT:   Unit:   ALU2

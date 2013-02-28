@@ -103,11 +103,14 @@ void ModuloScheduling::print(llvm::raw_ostream &OS,
   if(!Mod)
     return;
 
-  // Input instructions
+  OS << "--------------- SCHED-TIME ---------------\n";
+  for(std::map<llvm::Instruction *, int>::const_iterator iter = schedTime.begin(); 
+          iter != schedTime.end(); 
+          ++iter){
+    OS << iter->second << " : " << *(iter->first) << "\n"; 
+  }
+  OS << "--------------- ~~~~~~~~~~~~~~ ---------------\n";
 
-  // Output
-  // resTable
-  // SchedTime
 }
 
 
@@ -119,6 +122,7 @@ void ModuloScheduling::printResourceTable() {
 
   // VERTICAL RAPRESENTATION
 
+  // llvm::errs() << "\t\t ||\t";
   for (std::vector<cot::Operand>::iterator op = ops.begin(); op != ops.end(); ++op) {
     if (std::find(done.begin(), done.end(), op->getUnit()) == done.end()) {
       // llvm::errs() << op->getUnit() << "\t\t || \t\t";
@@ -156,8 +160,7 @@ void ModuloScheduling::printResourceTable() {
       // llvm::errs() << op->getUnit() <<"\t";
       for (int i = 0; i < tot; ++i)
         if (resourceTable[op->getUnit()][i] != NULL){
-          llvm::Instruction * currentI = resourceTable[op->getUnit()][i];
-          // llvm::errs() << currentI->getOpcodeName() << "\t";
+          // llvm::errs() << (resourceTable[op->getUnit()][i])->getOpcodeName() << "\t";
         }else{
           // llvm::errs() << "nop\t";
         }
@@ -192,7 +195,6 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
 
   // Declarations
   std::map<llvm::Instruction *, int> lastTime;
-  std::map<llvm::Instruction *, int> schedTime;
 
   // Lower bound for delta
   int deltaMin = std::max(resourcesBoundEstimator(originalInstructions), dataDependenceBoundEstimator(originalInstructions));
@@ -245,6 +247,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
                                                    ++firstP){
         if(llvm::Instruction * currentP = llvm::dyn_cast<llvm::Instruction>(*firstP)) {
           // llvm::errs() << "  " << (*currentP) << ", schedTime: " << schedTime[currentP] << "\n";
+          currentP = NULL;
         }
       }
 
@@ -312,6 +315,7 @@ std::vector<llvm::Instruction *> ModuloScheduling::doScheduling(std::vector<llvm
                                                    ++firstS){
         if(llvm::Instruction * currentS = llvm::dyn_cast<llvm::Instruction>(*firstS)){
           // llvm::errs() << "  " << (*currentS) << ", schedTime: " << schedTime[currentS] << "\n";
+          currentS = NULL;
         }
       }
 
